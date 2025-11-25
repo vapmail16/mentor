@@ -10,7 +10,12 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+# npm ci requires package-lock.json for reproducible builds
+# If package-lock.json doesn't exist, generate it first
+RUN if [ ! -f package-lock.json ]; then \
+      npm install --package-lock-only --omit=dev; \
+    fi && \
+    npm ci --omit=dev
 
 # Stage 2: Production stage
 FROM node:18-alpine

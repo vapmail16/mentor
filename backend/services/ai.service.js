@@ -17,32 +17,101 @@ const extractAudioFromVideo = async (videoUrl) => {
 
 /**
  * Transcribe audio using Whisper API
+ * 
+ * Bug Fix: Previous implementation had incorrect Content-Type and body format.
+ * OpenAI Whisper API requires multipart/form-data with the actual audio file.
  */
 const transcribeAudio = async (audioUrl, language = null) => {
   if (!OPENAI_API_KEY) {
     throw new Error('OpenAI API key not configured');
   }
 
+  if (!audioUrl) {
+    throw new Error('Audio URL is required for transcription');
+  }
+
   try {
+    // Download the audio file from URL
+    logger.info('Downloading audio file for transcription', { audioUrl });
+    const audioResponse = await fetch(audioUrl);
+    
+    if (!audioResponse.ok) {
+      throw new Error(`Failed to download audio file: ${audioResponse.status} ${audioResponse.statusText}`);
+    }
+
+    // Get the audio file as a buffer
+    const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
+
+    // Determine file extension from URL or Content-Type
+    const contentType = audioResponse.headers.get('content-type') || '';
+    let fileExtension = 'mp3'; // default
+    let fileName = 'audio.mp3';
+    
+    if (audioUrl.match(/\.(mp3|m4a|wav|webm|ogg|flac|mp4)$/i)) {
+      fileExtension = audioUrl.match(/\.([^.]+)$/i)[1].toLowerCase();
+      fileName = `audio.${fileExtension}`;
+    } else if (contentType.includes('audio/mpeg')) {
+      fileExtension = 'mp3';
+      fileName = 'audio.mp3';
+    } else if (contentType.includes('audio/mp4')) {
+      fileExtension = 'm4a';
+      fileName = 'audio.m4a';
+    } else if (contentType.includes('audio/wav')) {
+      fileExtension = 'wav';
+      fileName = 'audio.wav';
+    } else if (contentType.includes('audio/webm')) {
+      fileExtension = 'webm';
+      fileName = 'audio.webm';
+    }
+
+    // Create FormData for multipart/form-data upload
+    // Node.js 18+ has FormData built-in
+    const FormData = globalThis.FormData;
+    const formData = new FormData();
+    
+    // Create a Blob from the buffer and append it to FormData
+    // In Node.js, we can append a Blob directly
+    const audioBlob = new Blob([audioBuffer], { 
+      type: contentType || `audio/${fileExtension}` 
+    });
+    
+    formData.append('file', audioBlob, fileName);
+    formData.append('model', WHISPER_MODEL);
+    
+    if (language) {
+      formData.append('language', language);
+    }
+    
+    formData.append('response_format', 'verbose_json');
+
+    // Send the request with FormData
+    // Don't set Content-Type header manually - fetch will set it automatically with the boundary
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'multipart/form-data',
+        // Content-Type will be set automatically by fetch with proper boundary
       },
-      body: JSON.stringify({
-        model: WHISPER_MODEL,
-        language: language || undefined,
-        response_format: 'verbose_json',
-      }),
+      body: formData,
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Whisper API error: ${response.status} - ${error}`);
+      const errorText = await response.text();
+      logger.error('Whisper API error response', { 
+        status: response.status, 
+        error: errorText,
+        audioUrl 
+      });
+      throw new Error(`Whisper API error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
+    logger.info('Transcription successful', { 
+      audioUrl, 
+      language,
+      textLength: result.text?.length || 0,
+      segments: result.segments?.length || 0
+    });
     return result;
   } catch (error) {
     logger.error('Transcription error', error, { audioUrl, language });
