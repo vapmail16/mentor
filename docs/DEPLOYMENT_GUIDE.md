@@ -120,9 +120,9 @@ CASHFREE_SECRET_KEY=your-cashfree-secret-key-here
 # AI (OpenAI)
 OPENAI_API_KEY=your-openai-api-key-here
 
-# URLs
-FRONTEND_URL=https://your-frontend-domain.com
-BACKEND_URL=https://api.your-domain.com
+# URLs - CRITICAL: Use actual production URLs
+FRONTEND_URL=https://frontend-9gzu6ya5n8.dcdeploy.cloud
+BACKEND_URL=https://backend-9gzu6ya5n8.dcdeploy.cloud
 ```
 
 ---
@@ -198,7 +198,7 @@ VITE_CASHFREE_MODE=sandbox
 ### 5.2 Environment Variable Checklist
 
 #### Backend Variables
-- [ ] `NODE_ENV=production`
+- [ ] `NODE_ENV=production` - **CRITICAL:** Affects security settings (cookies, trust proxy, error handling)
 - [ ] `PORT=3001`
 - [ ] `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 - [ ] `DB_SSL=false` (or `true` if SSL required)
@@ -613,6 +613,33 @@ Internal server error: Failed to resolve import
 - Test CORS in production before marking deployment complete
 
 **See Critical Lesson 12 for complete details.**
+
+---
+
+#### Issue 14: Production Environment Variables Wrong - NODE_ENV and BACKEND_URL
+**Symptoms:**
+- Payment webhooks not working
+- Cookies not secure
+- Email links pointing to localhost
+- Error stack traces exposed
+
+**Root Cause:**
+- `NODE_ENV=development` instead of `production`
+- `BACKEND_URL=http://localhost:3001` instead of production URL
+- Environment variables copied from local setup
+
+**Solutions:**
+- ✅ **REQUIRED:** Set `NODE_ENV=production` in DC Deploy
+- ✅ **REQUIRED:** Set `BACKEND_URL=https://backend-9gzu6ya5n8.dcdeploy.cloud`
+- ✅ **REQUIRED:** Verify all URLs point to production, not localhost
+
+**Prevention:**
+- Never copy local .env to production
+- Use production-specific environment variables
+- Verify all variables before deployment
+- Test webhooks after deployment
+
+**See Critical Lesson 13 for complete details.**
 **Symptoms:**
 - Admin pages show "coming soon" messages
 - No real data displayed
@@ -1607,6 +1634,82 @@ FRONTEND_URL=https://frontend-9gzu6ya5n8.dcdeploy.cloud
 
 ---
 
+### 🚨 **CRITICAL LESSON 13: Production Environment Variables - NODE_ENV and BACKEND_URL Must Be Correct**
+
+**Problem:** Backend running in production with `NODE_ENV=development` and `BACKEND_URL=http://localhost:3001`, causing security issues and webhook failures.
+
+**Symptoms:**
+- Cookies not secure (no `Secure` flag)
+- Payment webhooks failing (Cashfree can't reach `localhost:3001`)
+- Email links pointing to localhost instead of production
+- Trust proxy not enabled (affects IP detection)
+- Error stack traces exposed to users
+- Webhook IP verification disabled
+
+**Root Causes:**
+1. **NODE_ENV not set to `production`** - Still using development settings
+2. **BACKEND_URL pointing to localhost** - Webhooks can't reach backend
+3. **Environment variables copied from local setup** without updating for production
+4. **Not verifying production environment variables** before deployment
+
+**What's Affected:**
+
+#### If `NODE_ENV=development`:
+- ❌ Cookies sent over HTTP (not secure) - security risk
+- ❌ Trust proxy disabled - can't detect real client IPs
+- ❌ Error stack traces shown to users - information disclosure
+- ❌ Webhook IP verification disabled - security risk
+- ❌ Development logging enabled - performance impact
+
+#### If `BACKEND_URL=http://localhost:3001`:
+- ❌ Payment webhooks fail - Cashfree can't reach localhost
+- ❌ Email links broken - point to localhost
+- ❌ Subscription activation doesn't work - webhook never received
+- ❌ Payment verification fails - can't verify with backend
+
+**Solution:**
+- ✅ **FIXED:** Updated deployment guide with correct values
+- ✅ **REQUIRED:** Set `NODE_ENV=production` in DC Deploy
+- ✅ **REQUIRED:** Set `BACKEND_URL=https://backend-9gzu6ya5n8.dcdeploy.cloud` in DC Deploy
+- ✅ **REQUIRED:** Set `FRONTEND_URL=https://frontend-9gzu6ya5n8.dcdeploy.cloud` in DC Deploy
+
+**DC Deploy Backend Environment Variables - CRITICAL:**
+```bash
+# ❌ WRONG:
+NODE_ENV=development          # Security risk!
+BACKEND_URL=http://localhost:3001  # Webhooks won't work!
+
+# ✅ CORRECT:
+NODE_ENV=production
+BACKEND_URL=https://backend-9gzu6ya5n8.dcdeploy.cloud
+FRONTEND_URL=https://frontend-9gzu6ya5n8.dcdeploy.cloud
+```
+
+**Pre-Deployment Verification:**
+Before deploying to production:
+1. ✅ **Check NODE_ENV** - Must be `production`
+2. ✅ **Check FRONTEND_URL** - Must be production frontend URL
+3. ✅ **Check BACKEND_URL** - Must be production backend URL (not localhost!)
+4. ✅ **Verify all URLs use HTTPS** - Never HTTP in production
+5. ✅ **No localhost URLs** - Everything must point to production
+
+**Security Impact:**
+- `NODE_ENV=development` exposes sensitive error details
+- Cookies without `Secure` flag can be intercepted
+- Webhooks failing means payments won't be processed automatically
+- Broken email links create poor user experience
+
+**Best Practices:**
+1. **Never copy local .env to production** - Create production-specific values
+2. **Verify environment variables before deployment** - Review all variables
+3. **Use separate environment configs** - Dev, staging, production
+4. **Document required production variables** - Keep checklist updated
+5. **Test webhooks after deployment** - Verify Cashfree can reach backend
+
+**This lesson is critical for security and payment processing - wrong environment variables break core functionality!**
+
+---
+
 ## 12. Continuous Deployment
 
 ### Auto-Deploy Setup
@@ -1860,5 +1963,5 @@ When adding new files to an existing codebase:
 **Last Updated:** 2024-11-25  
 **Platform:** DC Deploy  
 **Status:** Ready for Production Deployment ✅  
-**Lessons Learned:** 12 critical deployment issues documented and resolved
+**Lessons Learned:** 13 critical deployment issues documented and resolved
 
