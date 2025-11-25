@@ -249,7 +249,12 @@
 - [ ] Set up health checks in Dockerfiles
 - [ ] Configure non-root users for security
 - [ ] Set up proper signal handling
-- [ ] Test containers locally
+- [ ] **CRITICAL:** Create writable directories (e.g., logs) BEFORE USER switch
+- [ ] **CRITICAL:** Set proper ownership (`chown`) for writable directories
+- [ ] **CRITICAL:** Ensure `package-lock.json` files are committed (NOT in `.gitignore`)
+- [ ] **CRITICAL:** Add fallback logic in Dockerfiles: generate lock file if missing
+- [ ] **CRITICAL:** Match Node version in Dockerfile to package.json requirements
+- [ ] Test containers locally before deploying
 
 ### Environment Configuration
 - [ ] Set up production environment variables
@@ -273,6 +278,8 @@
 - [ ] Review authentication implementation
 - [ ] Review authorization rules
 - [ ] Check for exposed secrets in code
+- [ ] **CRITICAL:** Verify NO actual API keys in documentation files (use placeholders)
+- [ ] **CRITICAL:** Check all files before committing with `git diff --cached`
 - [ ] Verify .dockerignore excludes sensitive files
 
 ### Performance
@@ -286,7 +293,11 @@
 ### Testing
 - [ ] Run full test suite
 - [ ] Verify all tests pass
-- [ ] Test Docker builds locally
+- [ ] **CRITICAL:** Test Docker builds locally before pushing
+- [ ] **CRITICAL:** Test frontend build: `cd frontend && npm run build`
+- [ ] **CRITICAL:** Test backend container startup: `docker run --env-file .env`
+- [ ] **CRITICAL:** Test frontend container startup: `docker run`
+- [ ] Verify all export/import patterns are consistent
 - [ ] Test containers locally
 - [ ] Test in staging environment
 - [ ] Perform security testing
@@ -299,8 +310,10 @@
 ### Repository Setup
 - [ ] Initialize git repository
 - [ ] Create `.gitignore` file
+- [ ] **CRITICAL:** Verify `package-lock.json` is NOT in `.gitignore` (must be committed)
 - [ ] Add remote repository
 - [ ] Create initial commit
+- [ ] **CRITICAL:** Review all files before committing (no sensitive data in docs)
 - [ ] Push to GitHub/GitLab
 
 ### Branching Strategy
@@ -401,10 +414,65 @@ psql -h localhost -U user -d database_name
 
 ---
 
+---
+
+## 📋 Phase 13: Critical Deployment Lessons Learned
+
+### Docker Build Issues
+- [ ] **VERIFIED:** `package-lock.json` files are committed (NOT in `.gitignore`)
+- [ ] **VERIFIED:** Dockerfiles have fallback logic for missing lock files
+- [ ] **VERIFIED:** All writable directories created BEFORE USER switch
+- [ ] **VERIFIED:** Proper ownership set for writable directories
+
+### Frontend Build Issues
+- [ ] **VERIFIED:** All service files use consistent export pattern (default exports)
+- [ ] **VERIFIED:** All imports use index file, not direct service imports
+- [ ] **VERIFIED:** Frontend build succeeds locally: `npm run build`
+- [ ] **VERIFIED:** Node version in Dockerfile matches package.json requirements
+
+### Runtime Issues
+- [ ] **VERIFIED:** Backend container starts successfully with test `.env`
+- [ ] **VERIFIED:** Logs directory permissions are correct
+- [ ] **VERIFIED:** All environment variables are set correctly
+
+### Security Issues
+- [ ] **VERIFIED:** NO actual API keys in documentation files
+- [ ] **VERIFIED:** All documentation uses placeholders
+- [ ] **VERIFIED:** All secrets are in `.env` files (which are in `.gitignore`)
+
+---
+
+## 📋 Deployment Checklist Summary
+
+### Pre-Deployment
+1. ✅ All tests passing
+2. ✅ Docker builds succeed locally
+3. ✅ Containers start successfully locally
+4. ✅ Frontend build succeeds
+5. ✅ No sensitive data in documentation
+6. ✅ All lock files committed
+7. ✅ Export/import patterns consistent
+
+### Deployment
+1. ✅ Environment variables configured in platform
+2. ✅ Build arguments set correctly
+3. ✅ Health checks configured
+4. ✅ Resource limits set appropriately
+
+### Post-Deployment
+1. ✅ Health check endpoints responding
+2. ✅ Application accessible
+3. ✅ API endpoints working
+4. ✅ Frontend-backend integration working
+
+---
+
 **Use this checklist for every new project to ensure consistency and quality!**
 
 ---
 
 **Created:** 2024-11-25  
-**Based on:** AI-Powered Mentor Learning Platform Development Experience
+**Last Updated:** 2024-11-25  
+**Based on:** AI-Powered Mentor Learning Platform Development Experience  
+**Critical Lessons:** 6 deployment issues documented and resolved
 
