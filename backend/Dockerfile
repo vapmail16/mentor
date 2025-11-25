@@ -30,11 +30,19 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
+# Create logs directory and set ownership before copying files
+RUN mkdir -p /app/logs && \
+    chown -R nodejs:nodejs /app
+
 # Copy dependencies from builder
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 
 # Copy application code
 COPY --chown=nodejs:nodejs . .
+
+# Ensure logs directory exists and has correct permissions
+RUN chown -R nodejs:nodejs /app/logs && \
+    chmod 755 /app/logs
 
 # Switch to non-root user
 USER nodejs

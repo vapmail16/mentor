@@ -8,8 +8,17 @@ const __dirname = path.dirname(__filename);
 
 // Create logs directory if it doesn't exist
 const logsDir = path.join(__dirname, '../logs');
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir, { recursive: true });
+let logsDirExists = false;
+try {
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true, mode: 0o755 });
+  }
+  logsDirExists = true;
+} catch (error) {
+  // If we can't create logs directory (permission issues in Docker),
+  // we'll fall back to console-only logging
+  console.warn('Warning: Could not create logs directory, using console logging only:', error.message);
+  logsDirExists = false;
 }
 
 // Custom format for logs
@@ -34,32 +43,45 @@ const consoleFormat = winston.format.combine(
 );
 
 // Create logger instance
+const transports = [];
+
+// Only add file transports if logs directory exists and is writable
+if (logsDirExists) {
+  try {
+    // Test write permissions
+    fs.accessSync(logsDir, fs.constants.W_OK);
+    transports.push(
+      // Error log file
+      new winston.transports.File({
+        filename: path.join(logsDir, 'error.log'),
+        level: 'error',
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
+      }),
+      // Combined log file
+      new winston.transports.File({
+        filename: path.join(logsDir, 'combined.log'),
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
+      }),
+      // Exception log file
+      new winston.transports.File({
+        filename: path.join(logsDir, 'exceptions.log'),
+        handleExceptions: true,
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
+      })
+    );
+  } catch (error) {
+    console.warn('Warning: Logs directory is not writable, using console logging only:', error.message);
+  }
+}
+
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: logFormat,
   defaultMeta: { service: 'mentor-platform' },
-  transports: [
-    // Error log file
-    new winston.transports.File({
-      filename: path.join(logsDir, 'error.log'),
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    // Combined log file
-    new winston.transports.File({
-      filename: path.join(logsDir, 'combined.log'),
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    // Exception log file
-    new winston.transports.File({
-      filename: path.join(logsDir, 'exceptions.log'),
-      handleExceptions: true,
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-  ],
+  transports,
 });
 
 // Add console transport for non-production environments
