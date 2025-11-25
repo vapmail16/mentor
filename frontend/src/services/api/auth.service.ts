@@ -39,7 +39,7 @@ const buildAuthResponse = (user: User | null, error: Error | null = null): AuthR
   error,
 });
 
-export const authService = {
+const authService = {
   async signUp(
     email: string,
     password: string,
@@ -224,3 +224,4 @@ export const authService = {
   },
 };
 
+export default authService;
