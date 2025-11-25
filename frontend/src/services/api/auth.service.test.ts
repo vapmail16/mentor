@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { authService } from './auth.service';
+import authService from './auth.service';
 import * as http from './http';
 
 // Mock the http module
