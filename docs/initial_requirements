@@ -1,0 +1,493 @@
+📘 PRODUCT REQUIREMENTS DOCUMENT (PRD v2)
+AI-Powered Mentor Learning Platform (Multilingual, Video + Audio + AI Summaries)
+
+A comprehensive mentorship platform combining long-form interviews, short videos, multilingual AI, learning paths, community interaction, and gamification.
+
+1. Product Overview
+
+This platform brings real-world expertise from professionals, entrepreneurs, and industry veterans to users through:
+
+Long-format mentor interviews
+
+Multiple short clips per session
+
+AI-generated multilingual transcripts, English translations, summaries, and key learnings
+
+Video, text, and audio-only formats
+
+Interaction features: comments, mentor Q&A, community discussion
+
+Gamification & completion certificates
+
+Corporate & school plans for bulk access
+
+Users subscribe (via Cashfree) to access all content.
+Admins manage mentors, videos, short clips, AI outputs, and community moderation.
+
+2. Goals & Success Metrics
+2.1 Goals
+
+Democratise mentorship across India and globally
+
+Make vernacular knowledge searchable and accessible in English
+
+Build a premium learning experience through expert interviews
+
+Increase engagement by adding interaction & gamification
+
+Enable companies/schools to adopt structured learning paths
+
+2.2 Metrics
+
+Video watch time per session
+
+Completion rates
+
+Q&A & comment activity
+
+Corporate subscriptions
+
+Certificate downloads
+
+AI-summary consumption
+
+3. User Roles & Permissions
+3.1 Guest
+
+Browse catalog
+
+Watch limited previews
+
+Cannot access full content
+
+3.2 Mentee (Paid User)
+
+Watch full videos + short clips
+
+Access transcripts (vernacular + English)
+
+Read summaries & key learnings
+
+Use audio-only mode
+
+Participate in community Q&A
+
+Comment under videos
+
+Ask questions to mentors
+
+Access learning paths
+
+Earn badges & certificates
+
+Download content offline (if allowed per video)
+
+3.3 Mentor
+
+Secure login
+
+Access analytics dashboard:
+
+Views, watch time
+
+Demographics
+
+Engagement (comments, Q&A)
+
+Respond to mentee questions
+
+Participate in live sessions
+
+3.4 Admin
+
+Full control of mentors/sessions/short clips
+
+Upload or link YouTube Restricted Mode videos
+
+Trigger & approve AI pipeline
+
+Moderate Q&A, comments
+
+Manage corporate/school accounts
+
+Approve certificates & learning paths
+
+Analytics dashboard for platform
+
+4. Core Features
+4.1 Content Model
+Mentor
+
+Name, bio, domains, specialties, languages
+
+Photo, achievements
+
+Session
+
+Main video (uploaded or YouTube Restricted Mode)
+
+Multiple short videos attached to same session
+
+Language tags
+
+Difficulty level
+
+Duration
+
+AI outputs:
+
+Vernacular transcript
+
+English translation
+
+Summary
+
+Key learnings
+
+Chapters
+
+Audio-only file
+
+Download allowed? (yes/no flag)
+
+Topics & Subtopics
+
+E.g., Law, Startup, Marketing, Education, Finance
+
+Multi-tag support
+
+4.2 AI Pipeline (Multilingual + Full Processing)
+
+🔑 Critical: Vernacular → English AI translation
+
+Steps:
+
+Multilingual Speech-to-Text
+
+Translation to English
+
+Chapter segmentation
+
+Summaries
+
+Key learnings
+
+Auto-tagging
+
+Audio extraction
+
+Admin can edit every output via dashboard.
+
+4.3 Learning Paths & Certificates
+Learning Paths
+
+Curated playlists that mentor or admin can create
+
+Examples:
+
+“Startup Essentials”
+
+“Women in Leadership”
+
+“Law for Beginners”
+
+Certificates
+
+Generated automatically after completing a path
+
+Includes:
+
+User name
+
+Program title
+
+Completion date
+
+QR code verification
+
+Can be downloaded as PDF
+
+Integrated into gamification (badges + achievements)
+
+4.4 Player Experience
+Video Player
+
+Main video
+
+Short videos (switchable tabs or carousel)
+
+Playback speed
+
+Chapter thumbnails
+
+Audio Player
+
+MP3 mode
+
+Background play
+
+Offline download
+
+Tabs under a session
+
+Summary
+
+Transcript (Original Language)
+
+Transcript (English)
+
+Key Learnings
+
+Chapters
+
+Comments
+
+Q&A
+
+4.5 Community & Interaction Features
+Comments (YES)
+
+Under every session, users can:
+
+Comment
+
+Reply
+
+Like comments
+
+Report inappropriate content
+Admin moderation panel included.
+
+Q&A (YES)
+
+Users can submit questions directly to the mentor.
+Mentor receives notification.
+Mentor can respond inside dashboard.
+
+Community Discussion
+
+Threaded community Q&A under each video:
+
+View popular questions
+
+Mentor responses highlighted
+
+Upvote/downvote
+
+4.6 Mentor Live Sessions
+
+Mentors can conduct live events inside the platform.
+Features:
+
+Live streaming integration (YouTube private or Zoom integration)
+
+Mentees can register & attend
+
+Live Q&A box
+
+Replay gets added to mentor’s page
+
+4.7 Offline Mode
+
+Users can download:
+
+Audio files
+
+Videos (if allowed for that session)
+
+Summaries & transcripts
+
+Downloads protected through DRM-like token system.
+
+4.8 Corporate & School Plans
+Features
+
+Bulk licences
+
+Admin login for HR/Principals
+
+Track employee/student progress
+
+Private groups
+
+Private Q&A for the organisation
+
+Custom learning paths per company/school
+
+4.9 Gamification (YES)
+Badges
+
+First Video Completed
+
+10 Sessions Completed
+
+Topic Master (e.g., “Startup Master”)
+
+Mentor Favourite Award
+
+Certificates (Already covered)
+
+Automatically issued after finishing a learning path
+
+Streaks
+
+Daily learning streaks
+
+Weekly learning habit encouragement
+
+5. Search & Discovery
+
+Search across:
+
+Transcripts
+
+English translations
+
+Mentors
+
+Topics
+
+Summaries
+
+Auto-suggest & semantic search
+
+Filters:
+
+Domain
+
+Mentor
+
+Duration
+
+Language
+
+6. Payment & Notifications
+Payment: Cashfree
+
+Monthly
+
+Annual
+
+Student pricing
+
+Corporate invoicing
+
+Email: Resend
+
+Signup confirmation
+
+Subscription confirmation
+
+New mentor/session added
+
+Learning path progress
+
+Certificate award
+
+Mentor answer notifications
+
+7. Admin Panel Features
+
+Add/edit mentors
+
+Add/edit sessions
+
+Upload long video & short videos
+
+Link external (YouTube Restricted) videos
+
+Trigger AI processing
+
+Edit summaries, translations, transcripts
+
+Manage comments & Q&A moderation
+
+Create/edit learning paths
+
+Generate corporate keys
+
+Analytics dashboard
+
+Top mentors
+
+Most watched topics
+
+Engagement charts
+
+8. Mentor Dashboard
+
+Mentors get their own login with:
+
+Analytics
+
+Views
+
+Watch time
+
+Engagement metrics
+
+Demographics
+
+Q&A inbox
+
+Ability to respond to user questions
+
+Live session scheduling
+
+Profile management
+
+9. Non-Functional Requirements
+
+Secure JWT authentication
+
+Mobile-first responsive design
+
+Fast streaming via CDN
+
+Secure offline downloads
+
+Scalable backend (10k–100k concurrent users)
+
+High multilingual accuracy
+
+10. Tech Stack Summary
+Frontend
+
+Flutter or React + Next.js
+
+Backend
+
+Node.js or FastAPI
+
+Database
+
+PostgreSQL
+
+Storage
+
+AWS S3 (video/audio)
+
+AI
+
+OpenAI + Whisper + multilingual models
+
+Payments
+
+Cashfree
+
+Email
+
+Resend
+
+Live Events
+
+YouTube private stream / Zoom SDK
+
+START HERE - 
+
+1. go above root folder and look for Juris_aid project; need to copy the design of the prject that project also have student login and workflow, we can take inspiration from that, you can copy update and reuse that code
+2. database should be postgresql local which youneed to create with all required tables / columsn /indexs and triggers 
+3. create JWT based email/password login 
+4. implement resend as complete SMTP solution and cashfree for payments you can get details from "ai-nextwave-launchpad" project above root of this project 
+5. there are two files in the project please consider them while buidling this app 1. LEARNINGS_AND_BEST_PRACTICES.md 2. DEVELOPMENT_BEST_PRACTICES.md
+6. need to create with proper seperation of concerns frontend-middleware-backend-database (with no logic exposed in frontend)
