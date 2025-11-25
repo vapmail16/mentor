@@ -692,7 +692,7 @@ cd frontend && npm test
 
 ---
 
-## 12. Monitoring and Maintenance
+## 14. Monitoring and Maintenance
 
 ### Logs
 - **Backend:** Check DC Deploy logs for errors
@@ -711,7 +711,7 @@ cd frontend && npm test
 
 ---
 
-## 13. Rollback Procedure
+## 15. Rollback Procedure
 
 If deployment fails:
 
@@ -746,8 +746,6 @@ If deployment fails:
 - See section 5.2 for complete list
 - Backend: Runtime variables
 - Frontend: Build arguments
-
----
 
 ---
 
