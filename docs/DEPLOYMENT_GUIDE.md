@@ -583,6 +583,36 @@ Internal server error: Failed to resolve import
 ---
 
 #### Issue 12: Admin Pages Are Placeholders - No Real Functionality for E2E Testing
+
+**See Critical Lesson 10 for complete details.**
+
+---
+
+#### Issue 13: Production CORS Errors - Frontend Can't Communicate with Backend
+**Symptoms:**
+- CORS policy errors in browser console
+- Frontend requests blocked by CORS
+- Login/API calls failing in production
+- Error: `Access-Control-Allow-Origin header has value 'http://localhost:5173' that is not equal to supplied origin`
+
+**Root Cause:**
+- Backend CORS configured only for `http://localhost:5173`
+- `FRONTEND_URL` environment variable not set correctly in production
+- Production frontend URL not in allowed origins list
+
+**Solutions:**
+- ✅ **FIXED:** Updated CORS to support multiple origins dynamically
+- ✅ **FIXED:** Added regex pattern for production domains
+- ✅ **FIXED:** CORS now checks allowed origins list
+- ✅ **REQUIRED:** Set `FRONTEND_URL` environment variable in DC Deploy to production frontend URL
+
+**Prevention:**
+- Always set `FRONTEND_URL` environment variable in production
+- Support multiple origins in CORS (dev + production)
+- Use environment variables, never hardcode origins
+- Test CORS in production before marking deployment complete
+
+**See Critical Lesson 12 for complete details.**
 **Symptoms:**
 - Admin pages show "coming soon" messages
 - No real data displayed
@@ -1830,5 +1860,5 @@ When adding new files to an existing codebase:
 **Last Updated:** 2024-11-25  
 **Platform:** DC Deploy  
 **Status:** Ready for Production Deployment ✅  
-**Lessons Learned:** 11 critical deployment issues documented and resolved
+**Lessons Learned:** 12 critical deployment issues documented and resolved
 
