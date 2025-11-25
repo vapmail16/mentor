@@ -236,30 +236,61 @@
 
 ## 📋 Phase 10: Deployment Preparation
 
+### Docker Setup
+- [ ] Create `backend/Dockerfile`
+- [ ] Create `frontend/Dockerfile`
+- [ ] Create `backend/.dockerignore`
+- [ ] Create `frontend/.dockerignore`
+- [ ] Create `docker-compose.yml` (for local testing)
+- [ ] Test Docker builds locally
+
+### Docker Configuration
+- [ ] Configure multi-stage builds for optimization
+- [ ] Set up health checks in Dockerfiles
+- [ ] Configure non-root users for security
+- [ ] Set up proper signal handling
+- [ ] Test containers locally
+
 ### Environment Configuration
 - [ ] Set up production environment variables
 - [ ] Configure production database
 - [ ] Set up SSL certificates
 - [ ] Configure domain names
 
+### DC Deploy / Platform Setup
+- [ ] Create backend service in deployment platform
+- [ ] Create frontend service in deployment platform
+- [ ] Configure build settings (Dockerfile paths)
+- [ ] Set environment variables in platform
+- [ ] Configure build arguments for frontend
+- [ ] Set up health checks in platform
+- [ ] Configure resource limits (CPU, memory)
+- [ ] Set up custom domains/subdomains
+
 ### Security Review
 - [ ] Review all environment variables
-- [ ] Verify all secrets are secured
+- [ ] Verify all secrets are secured (marked as secrets in platform)
 - [ ] Review authentication implementation
 - [ ] Review authorization rules
 - [ ] Check for exposed secrets in code
+- [ ] Verify .dockerignore excludes sensitive files
 
 ### Performance
 - [ ] Optimize database queries
 - [ ] Add missing indexes
 - [ ] Review slow queries
 - [ ] Set up monitoring
+- [ ] Configure CDN for frontend (if applicable)
+- [ ] Enable Gzip compression
 
 ### Testing
 - [ ] Run full test suite
 - [ ] Verify all tests pass
+- [ ] Test Docker builds locally
+- [ ] Test containers locally
 - [ ] Test in staging environment
 - [ ] Perform security testing
+- [ ] Test health check endpoints
 
 ---
 

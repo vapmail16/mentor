@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build outputs (will be built in Docker)
+dist
+build
+
+# Environment files (provided at build time)
+.env
+.env.local
+.env.*.local
+
+# Test files
+src/**/*.test.tsx
+src/**/*.test.ts
+src/test
+coverage
+*.test.*
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+docs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vite
+.vite
+*.local
+
