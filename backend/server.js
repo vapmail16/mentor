@@ -62,9 +62,43 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
-// CORS configuration
+// CORS configuration - support multiple origins for dev and production
+const allowedOrigins = [
+  'http://localhost:5173', // Local development
+  'http://localhost:3000', // Alternative local port
+  FRONTEND_URL, // From environment variable (production)
+].filter(Boolean); // Remove any undefined values
+
+// Add production frontend URL if it's different from FRONTEND_URL
+if (process.env.NODE_ENV === 'production' && FRONTEND_URL !== 'http://localhost:5173') {
+  // Allow any subdomain of dcdeploy.cloud for production
+  allowedOrigins.push(/^https:\/\/frontend-.*\.dcdeploy\.cloud$/);
+  allowedOrigins.push(/^https:\/\/.*\.dcdeploy\.cloud$/);
+}
+
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Check if origin is in allowed list
+    if (allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return origin === allowedOrigin;
+      } else if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    })) {
+      callback(null, true);
+    } else {
+      // Log the blocked origin for debugging
+      logger.warn('CORS blocked origin', { origin, allowedOrigins });
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],

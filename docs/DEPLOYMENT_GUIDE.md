@@ -206,7 +206,8 @@ VITE_CASHFREE_MODE=sandbox
 - [ ] `RESEND_API_KEY`
 - [ ] `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`
 - [ ] `OPENAI_API_KEY`
-- [ ] `FRONTEND_URL`, `BACKEND_URL`
+- [ ] `FRONTEND_URL` - **CRITICAL:** Must match production frontend URL (e.g., `https://frontend-9gzu6ya5n8.dcdeploy.cloud`) for CORS to work
+- [ ] `BACKEND_URL`
 
 #### Frontend Build Arguments
 - [ ] `VITE_API_URL` (must be full URL with protocol)
@@ -1483,6 +1484,96 @@ grep -r "navigate(" frontend/src --include="*.tsx"
 ```
 
 **This lesson is critical for avoiding false confidence and ensuring true production readiness!**
+
+---
+
+### 🚨 **CRITICAL LESSON 12: CORS Configuration Must Match Production Frontend URL**
+
+**Problem:** Production frontend can't communicate with backend due to CORS errors. Backend is configured to only allow `http://localhost:5173` but production frontend is at `https://frontend-9gzu6ya5n8.dcdeploy.cloud`.
+
+**Symptoms:**
+```
+Access to fetch at 'https://backend-xxx/api/auth/login' from origin 'https://frontend-xxx' 
+has been blocked by CORS policy: The 'Access-Control-Allow-Origin' header has a value 
+'http://localhost:5173' that is not equal to the supplied origin.
+```
+
+**Root Causes:**
+1. **FRONTEND_URL environment variable not set correctly** in production
+2. **CORS configured with hardcoded localhost** origin
+3. **No support for multiple origins** (dev + production)
+4. **Environment variable defaults to localhost** - production needs actual URL
+
+**Solution:**
+- ✅ **FIXED:** Updated CORS to support multiple origins dynamically
+- ✅ **FIXED:** Added regex pattern matching for production domains
+- ✅ **FIXED:** CORS now checks against allowed origins list
+- ✅ **FIXED:** Logs blocked origins for debugging
+
+**Pre-Deployment Checklist:**
+- [ ] **FRONTEND_URL environment variable set** in DC Deploy backend service
+- [ ] **FRONTEND_URL matches actual production frontend URL** (e.g., `https://frontend-9gzu6ya5n8.dcdeploy.cloud`)
+- [ ] **CORS allows production origin** (either via FRONTEND_URL or regex patterns)
+- [ ] **Test CORS in production** - verify no CORS errors in browser console
+
+**Backend CORS Configuration:**
+```javascript
+// ✅ CORRECT - Supports multiple origins
+const allowedOrigins = [
+  'http://localhost:5173', // Local dev
+  FRONTEND_URL, // From environment (production)
+  /^https:\/\/frontend-.*\.dcdeploy\.cloud$/, // Production pattern
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') return origin === allowed;
+      if (allowed instanceof RegExp) return allowed.test(origin);
+      return false;
+    })) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+```
+
+**DC Deploy Environment Variables:**
+```bash
+# Backend Service - MUST SET THIS:
+FRONTEND_URL=https://frontend-9gzu6ya5n8.dcdeploy.cloud
+
+# Verify in DC Deploy dashboard:
+# Services → Backend → Environment Variables → FRONTEND_URL
+```
+
+**Verification Steps:**
+1. **Check backend logs** for CORS warnings when requests are blocked
+2. **Open browser console** on production frontend
+3. **Attempt login** - check for CORS errors
+4. **Verify FRONTEND_URL** in DC Deploy environment variables
+5. **Test from production frontend** - should work without CORS errors
+
+**Common Mistakes:**
+- ❌ **WRONG:** Leaving FRONTEND_URL as `http://localhost:5173` in production
+- ❌ **WRONG:** Hardcoding only one origin in CORS config
+- ❌ **WRONG:** Not setting FRONTEND_URL environment variable at all
+- ✅ **CORRECT:** Set FRONTEND_URL to actual production URL
+- ✅ **CORRECT:** Support multiple origins (dev + production)
+- ✅ **CORRECT:** Use environment variables, not hardcoded values
+
+**Best Practices:**
+1. **Always use environment variables** for CORS origins
+2. **Support multiple origins** (local dev + production)
+3. **Use regex patterns** for dynamic production domains
+4. **Log blocked origins** for debugging
+5. **Verify CORS in production** before marking deployment complete
+
+**This lesson is critical for production deployments - CORS failures prevent all API calls!**
 
 ---
 
