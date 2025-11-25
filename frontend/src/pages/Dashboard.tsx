@@ -1,14 +1,17 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, BookOpen, Award, TrendingUp } from 'lucide-react';
+import { GraduationCap, BookOpen, Award, TrendingUp, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import AppNavigation from '@/components/layout/AppNavigation';
+import Footer from '@/components/layout/Footer';
 
 export default function Dashboard() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
+      <AppNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
@@ -69,7 +72,22 @@ export default function Dashboard() {
             <CardDescription>Get started with these actions</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {user?.subscriptionStatus !== 'active' && (
+            {user?.role === 'admin' && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="font-medium text-blue-800 mb-2">Admin Access</p>
+                <p className="text-sm text-blue-700 mb-4">
+                  You have administrator privileges. Access the admin dashboard to manage the platform.
+                </p>
+                <Link to="/admin">
+                  <Button className="bg-blue-600 hover:bg-blue-700">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Go to Admin Dashboard
+                  </Button>
+                </Link>
+              </div>
+            )}
+            
+            {user?.subscriptionStatus !== 'active' && user?.role !== 'admin' && (
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="font-medium text-yellow-800 mb-2">Subscription Required</p>
                 <p className="text-sm text-yellow-700 mb-4">
@@ -98,6 +116,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 }

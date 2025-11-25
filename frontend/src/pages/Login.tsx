@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate, Link } from "react-router-dom";
-import { GraduationCap, Mail, Lock } from "lucide-react";
+import { GraduationCap, Mail, Lock, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -15,6 +15,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showTestCredentials, setShowTestCredentials] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +116,89 @@ const Login = () => {
           </div>
         </form>
 
+        {/* Test Credentials Helper */}
         <div className="mt-6 pt-6 border-t border-border">
+          <button
+            type="button"
+            onClick={() => setShowTestCredentials(!showTestCredentials)}
+            className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Info className="h-4 w-4" />
+            <span>Test Credentials</span>
+            {showTestCredentials ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+          
+          {showTestCredentials && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-3">
+              <div className="text-xs font-semibold text-foreground mb-2">Quick Login (Testing Only):</div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Admin:</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmail('admin@test.com');
+                        setPassword('Admin123!@#');
+                      }}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Fill
+                    </button>
+                  </div>
+                </div>
+                <div className="text-xs font-mono bg-background p-2 rounded">
+                  admin@test.com / Admin123!@#
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Mentor:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('mentor@test.com');
+                      setPassword('Mentor123!@#');
+                    }}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Fill
+                  </button>
+                </div>
+                <div className="text-xs font-mono bg-background p-2 rounded">
+                  mentor@test.com / Mentor123!@#
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Mentee:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('mentee@test.com');
+                      setPassword('Mentee123!@#');
+                    }}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Fill
+                  </button>
+                </div>
+                <div className="text-xs font-mono bg-background p-2 rounded">
+                  mentee@test.com / Mentee123!@#
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-border">
           <p className="text-xs text-center text-muted-foreground">
             By signing in, you agree to our Terms of Service and Privacy Policy
           </p>

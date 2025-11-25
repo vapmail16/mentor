@@ -1,3 +1,7 @@
+import dotenv from 'dotenv';
+// Load environment variables FIRST before creating the pool
+dotenv.config();
+
 import pg from 'pg';
 const { Pool } = pg;
 import fs from 'fs';

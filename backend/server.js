@@ -1,16 +1,16 @@
+import dotenv from 'dotenv';
+// Load environment variables FIRST, before any other imports that might use them
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { testConnection } from './config/database.js';
 import { logger } from './utils/logger.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
 import { errorHandler } from './middleware/errorHandler.js';
-
-// Load environment variables
-dotenv.config();
 
 // Validate critical environment variables (skip in test mode)
 if (process.env.NODE_ENV !== 'test') {
@@ -100,6 +100,7 @@ import commentRoutes from './routes/comments.routes.js';
 import qaRoutes from './routes/qa.routes.js';
 import gamificationRoutes from './routes/gamification.routes.js';
 import searchRoutes from './routes/search.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/payments', paymentRoutes);
@@ -111,6 +112,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/qa', qaRoutes);
 app.use('/api/gamification', gamificationRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

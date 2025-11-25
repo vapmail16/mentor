@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, Bell, Settings, LogOut, BookOpen, Award, Users, Search } from 'lucide-react';
+import { GraduationCap, Bell, Settings, LogOut, BookOpen, Award, Users, Search, Shield } from 'lucide-react';
 import { authService } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,8 +24,9 @@ const AppNavigation = () => {
   };
 
   const getDashboardPath = () => {
+    if (user?.role === 'admin') return '/admin';
     if (user?.role === 'mentee' || user?.role === 'guest') return '/dashboard';
-    if (user?.role === 'mentor') return '/mentor/dashboard';
+    if (user?.role === 'mentor') return '/dashboard';
     return '/dashboard';
   };
 
@@ -47,7 +48,29 @@ const AppNavigation = () => {
             
             {/* Role-specific navigation */}
             <nav className="hidden md:flex items-center gap-1">
-              {user?.role === 'mentee' || user?.role === 'guest' ? (
+              {user?.role === 'admin' ? (
+                <>
+                  <Button variant="ghost" onClick={() => navigate('/admin')}>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Admin
+                  </Button>
+                  <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+                    Dashboard
+                  </Button>
+                  <Button variant="ghost" onClick={() => navigate('/sessions')}>
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Sessions
+                  </Button>
+                  <Button variant="ghost" onClick={() => navigate('/learning-paths')}>
+                    <Award className="h-4 w-4 mr-2" />
+                    Learning Paths
+                  </Button>
+                  <Button variant="ghost" onClick={() => navigate('/mentors')}>
+                    <Users className="h-4 w-4 mr-2" />
+                    Mentors
+                  </Button>
+                </>
+              ) : user?.role === 'mentee' || user?.role === 'guest' ? (
                 <>
                   <Button variant="ghost" onClick={() => navigate('/dashboard')}>
                     Dashboard
@@ -71,10 +94,10 @@ const AppNavigation = () => {
                 </>
               ) : user?.role === 'mentor' ? (
                 <>
-                  <Button variant="ghost" onClick={() => navigate('/mentor/dashboard')}>
+                  <Button variant="ghost" onClick={() => navigate('/dashboard')}>
                     Dashboard
                   </Button>
-                  <Button variant="ghost" onClick={() => navigate('/mentor/sessions')}>
+                  <Button variant="ghost" onClick={() => navigate('/sessions')}>
                     My Sessions
                   </Button>
                 </>
@@ -88,8 +111,8 @@ const AppNavigation = () => {
               <Button 
                 variant="ghost" 
                 size="icon"
-                onClick={() => navigate("/settings")}
-                title="Settings"
+                onClick={() => navigate("/dashboard")}
+                title="Dashboard"
               >
                 <Settings className="h-5 w-5" />
               </Button>

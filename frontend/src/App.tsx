@@ -6,7 +6,15 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Pricing from './pages/Pricing';
+import PaymentSuccess from './pages/PaymentSuccess';
 import Sessions from './pages/Sessions';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminSessions from './pages/admin/AdminSessions';
+import AdminLearningPaths from './pages/admin/AdminLearningPaths';
+import AdminMentors from './pages/admin/AdminMentors';
+import AdminSubscriptions from './pages/admin/AdminSubscriptions';
+import AdminSettings from './pages/admin/AdminSettings';
 import SessionDetail from './pages/SessionDetail';
 import LearningPaths from './pages/LearningPaths';
 import LearningPathDetail from './pages/LearningPathDetail';
@@ -50,8 +58,65 @@ function AppRoutes() {
         element={user ? <Navigate to="/dashboard" replace /> : <Register />}
       />
       <Route path="/pricing" element={<Pricing />} />
+      <Route path="/payment/success" element={<PaymentSuccess />} />
       
       {/* Protected Routes */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute>
+            <AdminUsers />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/sessions"
+        element={
+          <ProtectedRoute>
+            <AdminSessions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/learning-paths"
+        element={
+          <ProtectedRoute>
+            <AdminLearningPaths />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/mentors"
+        element={
+          <ProtectedRoute>
+            <AdminMentors />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/subscriptions"
+        element={
+          <ProtectedRoute>
+            <AdminSubscriptions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/settings"
+        element={
+          <ProtectedRoute>
+            <AdminSettings />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/dashboard"
         element={

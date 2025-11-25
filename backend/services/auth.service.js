@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { query } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { emailService } from './email.service.js';
+import { AppError } from '../middleware/errorHandler.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -175,15 +176,21 @@ export const login = async (email, password) => {
     );
 
     if (userResult.rows.length === 0) {
-      throw new Error('Invalid email or password');
+      throw new AppError('Invalid email or password', 401);
     }
 
     const user = userResult.rows[0];
 
     // Verify password
+    if (!user.password_hash) {
+      logger.error('User has no password hash', { email, userId: user.id });
+      throw new AppError('Invalid email or password', 401);
+    }
+
     const passwordValid = await comparePassword(password, user.password_hash);
     if (!passwordValid) {
-      throw new Error('Invalid email or password');
+      logger.warn('Password mismatch', { email, userId: user.id });
+      throw new AppError('Invalid email or password', 401);
     }
 
     // Update last login
