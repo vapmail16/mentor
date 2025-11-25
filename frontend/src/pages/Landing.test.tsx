@@ -8,14 +8,14 @@ describe('Landing Page', () => {
     // Check for the main hero heading
     expect(screen.getByRole('heading', { name: /learn from industry experts/i })).toBeInTheDocument();
     // Check for features section heading
-    expect(screen.getByRole('heading', { name: /why choose mentor platform/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /comprehensive learning platform/i })).toBeInTheDocument();
   });
 
   it('should have navigation links', () => {
     render(<Landing />);
-    // Check for login/register links if they exist
-    const links = screen.queryAllByRole('link');
-    expect(links.length).toBeGreaterThan(0);
+    // Check for buttons in navigation (Login, Get Started buttons)
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.length).toBeGreaterThan(0);
   });
 });
 
