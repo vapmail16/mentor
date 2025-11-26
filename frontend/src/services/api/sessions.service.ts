@@ -7,6 +7,8 @@ export interface Session {
   description: string;
   main_video_url: string | null;
   audio_file_url: string | null;
+  video_type?: 'upload' | 'youtube';
+  youtube_video_id?: string | null;
   language: string;
   difficulty_level: string;
   duration_minutes: number;
