@@ -68,3 +68,4 @@ Thumbs.db
 *.local
 
 backend/.env.remote
+backend/.env.remote
