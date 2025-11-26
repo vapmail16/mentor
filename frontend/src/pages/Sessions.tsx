@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BookOpen, Search, Filter, Clock, User, Languages } from 'lucide-react';
-import { sessionsService, type Session } from '@/services/api';
+import { sessionsService, type Session, mentorsService } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import AppNavigation from '@/components/layout/AppNavigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,17 +24,31 @@ export default function Sessions() {
 
   useEffect(() => {
     loadSessions();
-  }, [filters, searchQuery]);
+  }, [filters, searchQuery, user]);
 
   const loadSessions = async () => {
     try {
       setLoading(true);
+      // If user is a mentor, filter to show only their sessions
+      let mentorId = filters.mentor_id;
+      if (user?.role === 'mentor' && !mentorId) {
+        // Get mentor profile to get mentor_id
+        try {
+          const mentorProfile = await mentorsService.getMentorProfile();
+          mentorId = mentorProfile.id;
+        } catch (error) {
+          console.error('Failed to load mentor profile:', error);
+        }
+      }
+
       const data = await sessionsService.getAllSessions({
         ...filters,
+        mentor_id: mentorId,
         search: searchQuery || undefined,
         limit: 50,
       });
-      setSessions(data);
+      const sessionsArray = Array.isArray(data) ? data : (data as any).data || [];
+      setSessions(sessionsArray);
     } catch (error: any) {
       toast({
         title: 'Error Loading Sessions',
@@ -52,9 +66,13 @@ export default function Sessions() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-bold mb-2">Browse Sessions</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            {user?.role === 'mentor' ? 'My Sessions' : 'Browse Sessions'}
+          </h1>
           <p className="text-muted-foreground">
-            Explore mentorship content from industry experts
+            {user?.role === 'mentor' 
+              ? 'View and manage your mentorship sessions'
+              : 'Explore mentorship content from industry experts'}
           </p>
         </div>
 

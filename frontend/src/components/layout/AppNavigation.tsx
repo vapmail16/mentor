@@ -100,6 +100,9 @@ const AppNavigation = () => {
                   <Button variant="ghost" onClick={() => navigate('/sessions')}>
                     My Sessions
                   </Button>
+                  <Button variant="ghost" onClick={() => navigate('/profile')}>
+                    Profile
+                  </Button>
                 </>
               ) : null}
             </nav>

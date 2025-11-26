@@ -139,6 +139,85 @@ router.get('/users', authenticateToken, requireAdmin, asyncHandler(async (req, r
 }));
 
 /**
+ * POST /api/admin/users
+ * Create user (admin only) - allows creating mentors with profile
+ */
+router.post('/users', authenticateToken, requireAdmin, asyncHandler(async (req, res) => {
+  const { email, password, full_name, role, phone, mentorProfileData } = req.body;
+
+  if (!email || !password || !full_name || !role) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        message: 'Email, password, full_name, and role are required',
+      },
+    });
+  }
+
+  // Import auth service
+  const authService = (await import('../services/auth.service.js')).default;
+  const bcrypt = await import('bcryptjs');
+  const { v4: uuidv4 } = await import('uuid');
+
+  // Check if user exists
+  const existingUser = await query(
+    'SELECT id FROM users WHERE email = $1',
+    [email.toLowerCase()]
+  );
+
+  if (existingUser.rows.length > 0) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        message: 'User with this email already exists',
+      },
+    });
+  }
+
+  // Hash password
+  const saltRounds = 12;
+  const passwordHash = await bcrypt.hash(password, saltRounds);
+
+  // Create user
+  const userId = uuidv4();
+  const userResult = await query(
+    `INSERT INTO users (id, email, password_hash, full_name, role, phone, email_confirmed)
+     VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+     RETURNING id, email, full_name, role, phone, email_confirmed`,
+    [userId, email.toLowerCase(), passwordHash, full_name, role, phone || null]
+  );
+
+  const user = userResult.rows[0];
+
+  // Create mentor profile if role is mentor
+  let mentorId = null;
+  if (role === 'mentor') {
+    const mentorResult = await query(
+      `INSERT INTO mentors (user_id, bio, domains, specialties, languages, achievements, verification_status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'verified')
+       RETURNING id`,
+      [
+        userId,
+        mentorProfileData?.bio || null,
+        mentorProfileData?.domains || [],
+        mentorProfileData?.specialties || [],
+        mentorProfileData?.languages || [],
+        mentorProfileData?.achievements || [],
+      ]
+    );
+    mentorId = mentorResult.rows[0].id;
+  }
+
+  res.status(201).json({
+    success: true,
+    data: {
+      ...user,
+      mentor_id: mentorId,
+    },
+  });
+}));
+
+/**
  * PUT /api/admin/users/:id
  * Update user (admin only)
  */
@@ -263,6 +342,53 @@ router.get('/subscriptions', authenticateToken, requireAdmin, asyncHandler(async
       limit: parseInt(limit),
       offset: parseInt(offset),
     },
+  });
+}));
+
+/**
+ * POST /api/admin/sessions
+ * Create session for any mentor (admin only)
+ */
+router.post('/sessions', authenticateToken, requireAdmin, asyncHandler(async (req, res) => {
+  const { mentor_id, title, description, language, difficulty_level, youtube_video_id, video_type, is_published } = req.body;
+
+  if (!mentor_id || !title || !description || !language) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        message: 'mentor_id, title, description, and language are required',
+      },
+    });
+  }
+
+  // Verify mentor exists
+  const mentorResult = await query('SELECT id FROM mentors WHERE id = $1', [mentor_id]);
+  if (mentorResult.rows.length === 0) {
+    return res.status(404).json({
+      success: false,
+      error: {
+        message: 'Mentor not found',
+      },
+    });
+  }
+
+  // Prepare session data
+  const sessionData = {
+    title,
+    description,
+    language,
+    difficulty_level: difficulty_level || 'beginner',
+    video_type: video_type || (youtube_video_id ? 'youtube' : 'upload'),
+    youtube_video_id: youtube_video_id || null,
+    main_video_url: youtube_video_id ? `https://www.youtube.com/watch?v=${youtube_video_id}` : null,
+    is_published: is_published || false,
+  };
+
+  const session = await sessionService.createSession(mentor_id, sessionData);
+
+  res.status(201).json({
+    success: true,
+    data: session,
   });
 }));
 

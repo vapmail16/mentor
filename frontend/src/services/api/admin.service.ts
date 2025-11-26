@@ -136,6 +136,50 @@ class AdminService {
     });
     return await parseJsonResponse<any>(response);
   }
+
+  /**
+   * Create user (admin only) - for creating mentors
+   */
+  async createUser(data: {
+    email: string;
+    password: string;
+    full_name: string;
+    role: 'guest' | 'mentee' | 'mentor' | 'admin';
+    phone?: string;
+    mentorProfileData?: {
+      bio?: string;
+      domains?: string[];
+      specialties?: string[];
+      languages?: string[];
+      achievements?: string[];
+    };
+  }): Promise<any> {
+    const response = await fetchWithAuth('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return await parseJsonResponse<any>(response);
+  }
+
+  /**
+   * Create session for a mentor (admin only)
+   */
+  async createSession(data: {
+    mentor_id: string;
+    title: string;
+    description: string;
+    language: string;
+    difficulty_level?: string;
+    youtube_video_id?: string;
+    video_type?: 'upload' | 'youtube';
+    is_published?: boolean;
+  }): Promise<any> {
+    const response = await fetchWithAuth('/admin/sessions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return await parseJsonResponse<any>(response);
+  }
 }
 
 export default new AdminService();

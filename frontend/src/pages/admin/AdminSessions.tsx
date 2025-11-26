@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import AppNavigation from '@/components/layout/AppNavigation';
 import Footer from '@/components/layout/Footer';
 import { AdminRoute } from '@/components/admin/AdminRoute';
-import { sessionsService, Session } from '@/services/api';
+import { sessionsService, Session, mentorsService, Mentor } from '@/services/api';
 import { adminService } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { extractYouTubeVideoId, isValidYouTubeUrl } from '@/utils/youtube';
@@ -28,6 +28,20 @@ export default function AdminSessions() {
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Create session modal state
+  const [showCreateSession, setShowCreateSession] = useState(false);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [mentors, setMentors] = useState<Mentor[]>([]);
+  const [newSession, setNewSession] = useState({
+    mentor_id: '',
+    title: '',
+    description: '',
+    language: 'English',
+    difficulty_level: 'beginner',
+    youtube_url: '',
+    is_published: false,
+  });
 
   const fetchSessions = async () => {
     setLoading(true);
@@ -54,6 +68,22 @@ export default function AdminSessions() {
   useEffect(() => {
     fetchSessions();
   }, [offset]);
+
+  useEffect(() => {
+    // Load mentors for create session dropdown
+    if (showCreateSession) {
+      const loadMentors = async () => {
+        try {
+          const result = await mentorsService.getAllMentors({ limit: 100 });
+          const mentorsArray = Array.isArray(result) ? result : (result as any).data || [];
+          setMentors(mentorsArray.filter((m: Mentor) => m.verification_status === 'verified'));
+        } catch (error) {
+          console.error('Failed to load mentors:', error);
+        }
+      };
+      loadMentors();
+    }
+  }, [showCreateSession]);
 
   useEffect(() => {
     const debounce = setTimeout(() => {
@@ -178,6 +208,67 @@ export default function AdminSessions() {
     }
   };
 
+  const handleCreateSession = async () => {
+    if (!newSession.mentor_id || !newSession.title || !newSession.description || !newSession.language) {
+      toast({
+        title: 'Validation Error',
+        description: 'Mentor, title, description, and language are required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newSession.youtube_url && !isValidYouTubeUrl(newSession.youtube_url)) {
+      toast({
+        title: 'Invalid YouTube URL',
+        description: 'Please enter a valid YouTube URL or video ID',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsCreatingSession(true);
+    try {
+      const videoId = newSession.youtube_url ? extractYouTubeVideoId(newSession.youtube_url) : null;
+      await adminService.createSession({
+        mentor_id: newSession.mentor_id,
+        title: newSession.title,
+        description: newSession.description,
+        language: newSession.language,
+        difficulty_level: newSession.difficulty_level,
+        youtube_video_id: videoId || undefined,
+        video_type: videoId ? 'youtube' : 'upload',
+        is_published: newSession.is_published,
+      });
+
+      toast({
+        title: 'Session created',
+        description: 'Session has been created successfully',
+      });
+
+      // Reset form
+      setNewSession({
+        mentor_id: '',
+        title: '',
+        description: '',
+        language: 'English',
+        difficulty_level: 'beginner',
+        youtube_url: '',
+        is_published: false,
+      });
+      setShowCreateSession(false);
+      fetchSessions();
+    } catch (error: any) {
+      toast({
+        title: 'Create failed',
+        description: error.message || 'Could not create session',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCreatingSession(false);
+    }
+  };
+
   return (
     <AdminRoute>
       <div className="min-h-screen bg-background flex flex-col">
@@ -189,7 +280,7 @@ export default function AdminSessions() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <div>
+            <div className="flex-1">
               <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
                 <BookOpen className="h-8 w-8 text-primary" />
                 Manage Sessions
@@ -198,6 +289,10 @@ export default function AdminSessions() {
                 View and manage all sessions ({filteredSessions.length} shown)
               </p>
             </div>
+            <Button onClick={() => setShowCreateSession(true)}>
+              <BookOpen className="h-4 w-4 mr-2" />
+              Create Session
+            </Button>
           </div>
 
           <Card className="mb-4">
@@ -431,6 +526,132 @@ export default function AdminSessions() {
                     </>
                   ) : (
                     'Save YouTube Link'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Create Session Modal */}
+      {showCreateSession && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Create New Session</CardTitle>
+                <Button variant="ghost" size="icon" onClick={() => setShowCreateSession(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <CardDescription>Create a new session for a mentor</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="mentor">Select Mentor *</Label>
+                <select
+                  id="mentor"
+                  value={newSession.mentor_id}
+                  onChange={(e) => setNewSession({ ...newSession, mentor_id: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md mt-1"
+                >
+                  <option value="">Select a mentor...</option>
+                  {mentors.map((mentor) => (
+                    <option key={mentor.id} value={mentor.id}>
+                      {mentor.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  value={newSession.title}
+                  onChange={(e) => setNewSession({ ...newSession, title: e.target.value })}
+                  placeholder="Session title"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Description *</Label>
+                <Textarea
+                  id="description"
+                  value={newSession.description}
+                  onChange={(e) => setNewSession({ ...newSession, description: e.target.value })}
+                  placeholder="Session description"
+                  rows={4}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="language">Language *</Label>
+                  <Input
+                    id="language"
+                    value={newSession.language}
+                    onChange={(e) => setNewSession({ ...newSession, language: e.target.value })}
+                    placeholder="English"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="difficulty">Difficulty Level</Label>
+                  <select
+                    id="difficulty"
+                    value={newSession.difficulty_level}
+                    onChange={(e) => setNewSession({ ...newSession, difficulty_level: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md mt-1"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="youtube_url">YouTube URL (Optional)</Label>
+                <Input
+                  id="youtube_url"
+                  value={newSession.youtube_url}
+                  onChange={(e) => setNewSession({ ...newSession, youtube_url: e.target.value })}
+                  placeholder="https://www.youtube.com/watch?v=... or video ID"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Paste YouTube URL or video ID. Can be added later if not available now.
+                </p>
+                {newSession.youtube_url && !isValidYouTubeUrl(newSession.youtube_url) && (
+                  <p className="text-xs text-red-600 mt-1">Invalid YouTube URL format</p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="is_published"
+                  checked={newSession.is_published}
+                  onChange={(e) => setNewSession({ ...newSession, is_published: e.target.checked })}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="is_published" className="cursor-pointer">
+                  Publish immediately
+                </Label>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setShowCreateSession(false)} disabled={isCreatingSession}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateSession} disabled={isCreatingSession || !newSession.mentor_id || !newSession.title || !newSession.description}>
+                  {isCreatingSession ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Session'
                   )}
                 </Button>
               </div>

@@ -20,6 +20,7 @@ import LearningPaths from './pages/LearningPaths';
 import LearningPathDetail from './pages/LearningPathDetail';
 import Mentors from './pages/Mentors';
 import MentorDetail from './pages/MentorDetail';
+import MentorProfile from './pages/MentorProfile';
 import Search from './pages/Search';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -170,6 +171,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <MentorDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <MentorProfile />
           </ProtectedRoute>
         }
       />
