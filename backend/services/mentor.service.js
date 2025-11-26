@@ -148,14 +148,21 @@ export const getAllMentors = async (filters = {}) => {
  */
 export const updateMentorVerification = async (mentorId, verificationStatus, adminUserId) => {
   try {
+    // Ensure verificationStatus is a valid string
+    const status = String(verificationStatus).trim();
+    
+    // Update verified_at based on status
+    const verifiedAt = status === 'verified' ? new Date() : null;
+    
+    // Use explicit type casting to avoid PostgreSQL type mismatch (TEXT vs VARCHAR)
     const result = await query(
       `UPDATE mentors 
-       SET verification_status = $1, 
-           verified_at = CASE WHEN $1 = 'verified' THEN CURRENT_TIMESTAMP ELSE NULL END,
+       SET verification_status = $1::VARCHAR(50), 
+           verified_at = $3,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2
+       WHERE id = $2::UUID
        RETURNING *`,
-      [verificationStatus, mentorId]
+      [status, mentorId, verifiedAt]
     );
 
     if (result.rows.length === 0) {
@@ -170,7 +177,7 @@ export const updateMentorVerification = async (mentorId, verificationStatus, adm
 
     return result.rows[0];
   } catch (error) {
-    logger.error('Update mentor verification error', error, { mentorId });
+    logger.error('Update mentor verification error', error, { mentorId, verificationStatus });
     throw error;
   }
 };

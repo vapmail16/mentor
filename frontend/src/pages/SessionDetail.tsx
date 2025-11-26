@@ -12,7 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import AppNavigation from '@/components/layout/AppNavigation';
 import VideoPlayer from '@/components/VideoPlayer';
 import { useAuth } from '@/contexts/AuthContext';
-import { buildYouTubeEmbedUrl, buildYouTubeWatchUrl } from '@/utils/youtube';
+import { buildYouTubeEmbedUrl, buildYouTubeWatchUrl, extractYouTubeVideoId } from '@/utils/youtube';
+import Comments from '@/components/Comments';
+import QA from '@/components/QA';
 
 export default function SessionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -140,12 +142,16 @@ export default function SessionDetail() {
           </div>
         </div>
 
-        {/* Video Player Section */}
-        {session.main_video_url && (
+        {/* Video Player Section - Show at top for YouTube videos */}
+        {(session.main_video_url || session.youtube_video_id) && (
           <Card className="mb-6">
-            <CardContent className="p-6">
+            <CardContent className="p-0">
               <VideoPlayer
-                url={session.main_video_url}
+                url={
+                  session.youtube_video_id
+                    ? buildYouTubeWatchUrl(session.youtube_video_id)
+                    : session.main_video_url!
+                }
                 onProgress={handleProgress}
               />
             </CardContent>
@@ -165,23 +171,6 @@ export default function SessionDetail() {
           </TabsList>
 
           <TabsContent value="video" className="mt-6 space-y-6">
-            {/* Main Video */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Main Video</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {session.main_video_url ? (
-                  <VideoPlayer
-                    url={session.main_video_url}
-                    onProgress={handleProgress}
-                  />
-                ) : (
-                  <p className="text-muted-foreground">Video not available</p>
-                )}
-              </CardContent>
-            </Card>
-
             {/* Spotify Audio Link */}
             {session.audio_file_url && session.audio_file_url.includes('spotify') && (
               <Card>

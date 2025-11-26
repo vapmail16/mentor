@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { BookOpen, Search, Filter, Clock, User, Languages } from 'lucide-react';
+import { BookOpen, Search, Filter, Clock, User, Languages, Play } from 'lucide-react';
 import { sessionsService, type Session, mentorsService } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import AppNavigation from '@/components/layout/AppNavigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { extractYouTubeVideoId, buildYouTubeWatchUrl } from '@/utils/youtube';
 
 export default function Sessions() {
   const navigate = useNavigate();
@@ -118,43 +119,69 @@ export default function Sessions() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sessions.map((session) => (
-              <Card
-                key={session.id}
-                className="hover:shadow-elegant transition-smooth cursor-pointer animate-scale-in"
-                onClick={() => navigate(`/sessions/${session.id}`)}
-              >
-                <CardHeader>
-                  <CardTitle className="line-clamp-2">{session.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {session.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {session.duration_minutes} min
+            {sessions.map((session) => {
+              // Extract YouTube video ID if available
+              const youtubeVideoId = session.youtube_video_id || 
+                (session.main_video_url ? extractYouTubeVideoId(session.main_video_url) : null);
+              
+              return (
+                <Card
+                  key={session.id}
+                  className="hover:shadow-elegant transition-smooth cursor-pointer animate-scale-in overflow-hidden"
+                  onClick={() => navigate(`/sessions/${session.id}`)}
+                >
+                  {/* YouTube Video Thumbnail */}
+                  {youtubeVideoId ? (
+                    <div className="relative aspect-video bg-black">
+                      <img
+                        src={`https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`}
+                        alt={session.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to medium quality thumbnail
+                          (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`;
+                        }}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors">
+                        <div className="bg-black/70 rounded-full p-4 hover:bg-black/90 transition-colors">
+                          <Play className="h-8 w-8 text-white ml-1" fill="white" />
+                        </div>
+                      </div>
+                      <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                        {session.duration_minutes} min
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Languages className="h-4 w-4" />
-                      {session.language}
-                    </div>
-                  </div>
-                  {session.mentor && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">
-                        {session.mentor.full_name}
-                      </span>
+                  ) : (
+                    <div className="aspect-video bg-muted flex items-center justify-center">
+                      <Play className="h-12 w-12 text-muted-foreground" />
                     </div>
                   )}
-                  <Button className="w-full mt-4" variant="outline">
-                    Watch Now
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                  
+                  <CardHeader>
+                    <CardTitle className="line-clamp-2">{session.title}</CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {session.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                      <div className="flex items-center gap-1">
+                        <Languages className="h-4 w-4" />
+                        {session.language}
+                      </div>
+                    </div>
+                    {session.mentor && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          {session.mentor.full_name}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

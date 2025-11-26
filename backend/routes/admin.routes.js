@@ -1,4 +1,6 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 import { authenticateToken, requireAdmin } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { query } from '../config/database.js';
@@ -145,6 +147,8 @@ router.get('/users', authenticateToken, requireAdmin, asyncHandler(async (req, r
 router.post('/users', authenticateToken, requireAdmin, asyncHandler(async (req, res) => {
   const { email, password, full_name, role, phone, mentorProfileData } = req.body;
 
+  logger.info('Creating user', { email, role, hasMentorProfileData: !!mentorProfileData });
+
   if (!email || !password || !full_name || !role) {
     return res.status(400).json({
       success: false,
@@ -154,10 +158,13 @@ router.post('/users', authenticateToken, requireAdmin, asyncHandler(async (req, 
     });
   }
 
-  // Import auth service
-  const authService = (await import('../services/auth.service.js')).default;
-  const bcrypt = await import('bcryptjs');
-  const { v4: uuidv4 } = await import('uuid');
+  // Validate mentor profile data if role is mentor
+  if (role === 'mentor' && !mentorProfileData) {
+    logger.warn('Creating mentor without mentorProfileData', { email });
+  }
+
+  // Import auth service (if needed in future)
+  // const authService = (await import('../services/auth.service.js')).default;
 
   // Check if user exists
   const existingUser = await query(
@@ -192,20 +199,44 @@ router.post('/users', authenticateToken, requireAdmin, asyncHandler(async (req, 
   // Create mentor profile if role is mentor
   let mentorId = null;
   if (role === 'mentor') {
-    const mentorResult = await query(
-      `INSERT INTO mentors (user_id, bio, domains, specialties, languages, achievements, verification_status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'verified')
-       RETURNING id`,
-      [
-        userId,
-        mentorProfileData?.bio || null,
-        mentorProfileData?.domains || [],
-        mentorProfileData?.specialties || [],
-        mentorProfileData?.languages || [],
-        mentorProfileData?.achievements || [],
-      ]
-    );
-    mentorId = mentorResult.rows[0].id;
+    try {
+      // Ensure we have a valid object for mentorProfileData
+      const profileData = mentorProfileData || {};
+      
+      // Ensure arrays are properly formatted for PostgreSQL TEXT[]
+      const domains = Array.isArray(profileData.domains) ? profileData.domains : [];
+      const specialties = Array.isArray(profileData.specialties) ? profileData.specialties : [];
+      const languages = Array.isArray(profileData.languages) ? profileData.languages : [];
+      const achievements = Array.isArray(profileData.achievements) ? profileData.achievements : [];
+
+      logger.info('Creating mentor profile', { userId, domains, specialties, languages, achievements });
+
+      const mentorResult = await query(
+        `INSERT INTO mentors (user_id, bio, domains, specialties, languages, achievements, verification_status)
+         VALUES ($1, $2, $3, $4, $5, $6, 'verified')
+         RETURNING id`,
+        [
+          userId,
+          profileData.bio || null,
+          domains,
+          specialties,
+          languages,
+          achievements,
+        ]
+      );
+      mentorId = mentorResult.rows[0].id;
+      logger.info('Mentor profile created successfully', { userId, mentorId });
+    } catch (error) {
+      logger.error('Error creating mentor profile', error, { userId, mentorProfileData, errorMessage: error.message, errorStack: error.stack });
+      // Rollback user creation if mentor profile creation fails
+      await query('DELETE FROM users WHERE id = $1', [userId]);
+      return res.status(500).json({
+        success: false,
+        error: {
+          message: 'Failed to create mentor profile: ' + (error.message || 'Unknown error'),
+        },
+      });
+    }
   }
 
   res.status(201).json({
@@ -381,7 +412,7 @@ router.post('/sessions', authenticateToken, requireAdmin, asyncHandler(async (re
     video_type: video_type || (youtube_video_id ? 'youtube' : 'upload'),
     youtube_video_id: youtube_video_id || null,
     main_video_url: youtube_video_id ? `https://www.youtube.com/watch?v=${youtube_video_id}` : null,
-    is_published: is_published || false,
+    is_published: is_published !== undefined ? is_published : true, // Default to published so mentees can see sessions
   };
 
   const session = await sessionService.createSession(mentor_id, sessionData);

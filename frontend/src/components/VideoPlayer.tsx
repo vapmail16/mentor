@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactPlayer from 'react-player';
-import { Button } from '@/components/ui/button';
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
+import { extractYouTubeVideoId, buildYouTubeEmbedUrl } from '@/utils/youtube';
 
 interface VideoPlayerProps {
   url: string;
@@ -10,26 +9,38 @@ interface VideoPlayerProps {
 }
 
 export default function VideoPlayer({ url, onProgress, onEnded }: VideoPlayerProps) {
-  const [playing, setPlaying] = useState(false);
-  const [volume, setVolume] = useState(1);
-  const [muted, setMuted] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
   const playerRef = useRef<ReactPlayer>(null);
+
+  // Extract YouTube video ID if it's a YouTube URL
+  const youtubeVideoId = extractYouTubeVideoId(url);
+  
+  // Build YouTube embed URL if it's a YouTube video
+  const embedUrl = youtubeVideoId ? buildYouTubeEmbedUrl(youtubeVideoId) : null;
 
   return (
     <div className="relative w-full bg-black rounded-lg overflow-hidden aspect-video">
-      <ReactPlayer
-        ref={playerRef}
-        url={url}
-        playing={playing}
-        volume={volume}
-        muted={muted}
-        width="100%"
-        height="100%"
-        controls={true}
-        onProgress={onProgress}
-        onEnded={onEnded}
-      />
+      {embedUrl ? (
+        // Use direct YouTube iframe for better compatibility and YouTube-like appearance
+        <iframe
+          src={embedUrl}
+          className="w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          title="YouTube video player"
+          frameBorder="0"
+        />
+      ) : (
+        // Use ReactPlayer for non-YouTube videos
+        <ReactPlayer
+          ref={playerRef}
+          url={url}
+          width="100%"
+          height="100%"
+          controls={true}
+          onProgress={onProgress}
+          onEnded={onEnded}
+        />
+      )}
     </div>
   );
 }

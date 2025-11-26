@@ -78,7 +78,7 @@ export const getAllSessions = async (filters = {}) => {
       language,
       difficulty_level,
       topic_id,
-      is_published = true,
+      is_published, // Don't default to true - undefined means show all (for admins)
       limit = 50,
       offset = 0,
       search,
@@ -166,6 +166,7 @@ export const createSession = async (mentorId, sessionData) => {
       youtube_video_id,
       download_allowed = false,
       topics = [],
+      is_published = true, // Default to published so mentees can see sessions
     } = sessionData;
 
     const sessionId = uuidv4();
@@ -173,8 +174,8 @@ export const createSession = async (mentorId, sessionData) => {
     const result = await query(
       `INSERT INTO sessions 
        (id, mentor_id, title, description, language, difficulty_level, 
-        main_video_url, video_type, youtube_video_id, download_allowed, topics)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        main_video_url, video_type, youtube_video_id, download_allowed, topics, is_published, published_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CASE WHEN $12 = TRUE THEN CURRENT_TIMESTAMP ELSE NULL END)
        RETURNING *`,
       [
         sessionId,
@@ -188,6 +189,7 @@ export const createSession = async (mentorId, sessionData) => {
         youtube_video_id,
         download_allowed,
         topics,
+        is_published,
       ]
     );
 

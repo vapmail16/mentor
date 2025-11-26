@@ -41,7 +41,7 @@ export default function AdminSessions() {
     language: 'English',
     difficulty_level: 'beginner',
     youtube_url: '',
-    is_published: false,
+    is_published: true, // Default to published so mentees can see sessions
   });
 
   // Short videos management modal state
