@@ -21,6 +21,9 @@ import LearningPathDetail from './pages/LearningPathDetail';
 import Mentors from './pages/Mentors';
 import MentorDetail from './pages/MentorDetail';
 import MentorProfile from './pages/MentorProfile';
+import MentorQAInbox from './pages/MentorQAInbox';
+import MentorDashboard from './pages/MentorDashboard';
+import MentorSessions from './pages/MentorSessions';
 import Search from './pages/Search';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -179,6 +182,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <MentorProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mentor/qa"
+        element={
+          <ProtectedRoute>
+            <MentorQAInbox />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mentor/dashboard"
+        element={
+          <ProtectedRoute>
+            <MentorDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mentor/sessions"
+        element={
+          <ProtectedRoute>
+            <MentorSessions />
           </ProtectedRoute>
         }
       />

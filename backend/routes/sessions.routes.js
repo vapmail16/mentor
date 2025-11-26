@@ -139,6 +139,70 @@ router.post('/', authenticateToken, requireMentor, asyncHandler(async (req, res)
 }));
 
 /**
+ * Middleware to allow mentor or admin
+ */
+const requireMentorOrAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: { message: 'Authentication required' },
+    });
+  }
+  if (req.user.role !== 'mentor' && req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      error: { message: 'Insufficient permissions. Mentor or admin role required.' },
+    });
+  }
+  next();
+};
+
+/**
+ * POST /api/sessions/:id/short-videos
+ * Add short video to session (mentor or admin only)
+ */
+router.post('/:id/short-videos', authenticateToken, requireMentorOrAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const video = await sessionService.addShortVideo(id, req.body);
+
+  res.status(201).json({
+    success: true,
+    data: video,
+  });
+}));
+
+/**
+ * PUT /api/sessions/short-videos/:id
+ * Update short video (mentor or admin only)
+ */
+router.put('/short-videos/:id', authenticateToken, requireMentorOrAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const video = await sessionService.updateShortVideo(id, req.body);
+
+  res.json({
+    success: true,
+    data: video,
+  });
+}));
+
+/**
+ * DELETE /api/sessions/short-videos/:id
+ * Delete short video (mentor or admin only)
+ */
+router.delete('/short-videos/:id', authenticateToken, requireMentorOrAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  await sessionService.deleteShortVideo(id);
+
+  res.json({
+    success: true,
+    message: 'Short video deleted successfully',
+  });
+}));
+
+/**
  * PUT /api/sessions/:id
  * Update session (mentor or admin only)
  */
@@ -216,20 +280,6 @@ router.delete('/:id', authenticateToken, asyncHandler(async (req, res) => {
   });
 }));
 
-/**
- * POST /api/sessions/:id/short-videos
- * Add short video to session (mentor or admin only)
- */
-router.post('/:id/short-videos', authenticateToken, requireMentor, asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const video = await sessionService.addShortVideo(id, req.body);
-
-  res.status(201).json({
-    success: true,
-    data: video,
-  });
-}));
 
 /**
  * POST /api/sessions/:id/watch

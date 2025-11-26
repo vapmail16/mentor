@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, BookOpen, Search, Loader2, Eye, EyeOff, Trash2, ExternalLink, Edit, Youtube, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, Search, Loader2, Eye, EyeOff, Trash2, ExternalLink, Edit, Youtube, X, Play, Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AppNavigation from '@/components/layout/AppNavigation';
 import Footer from '@/components/layout/Footer';
 import { AdminRoute } from '@/components/admin/AdminRoute';
-import { sessionsService, Session, mentorsService, Mentor } from '@/services/api';
+import { sessionsService, Session, mentorsService, Mentor, ShortVideo } from '@/services/api';
 import { adminService } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { extractYouTubeVideoId, isValidYouTubeUrl } from '@/utils/youtube';
@@ -27,6 +27,7 @@ export default function AdminSessions() {
   // Edit modal state
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [spotifyUrl, setSpotifyUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // Create session modal state
@@ -41,6 +42,19 @@ export default function AdminSessions() {
     difficulty_level: 'beginner',
     youtube_url: '',
     is_published: false,
+  });
+
+  // Short videos management modal state
+  const [showShortVideosModal, setShowShortVideosModal] = useState(false);
+  const [selectedSessionForShorts, setSelectedSessionForShorts] = useState<Session | null>(null);
+  const [shortVideos, setShortVideos] = useState<ShortVideo[]>([]);
+  const [loadingShortVideos, setLoadingShortVideos] = useState(false);
+  const [showAddShortVideo, setShowAddShortVideo] = useState(false);
+  const [editingShortVideo, setEditingShortVideo] = useState<ShortVideo | null>(null);
+  const [newShortVideo, setNewShortVideo] = useState({
+    title: '',
+    description: '',
+    youtube_url: '',
   });
 
   const fetchSessions = async () => {
@@ -155,11 +169,14 @@ export default function AdminSessions() {
     } else {
       setYoutubeUrl('');
     }
+    // Pre-fill Spotify URL if it exists
+    setSpotifyUrl(session.audio_file_url && session.audio_file_url.includes('spotify') ? session.audio_file_url : '');
   };
 
   const handleCloseEdit = () => {
     setEditingSession(null);
     setYoutubeUrl('');
+    setSpotifyUrl('');
   };
 
   const handleSaveYouTubeLink = async () => {
@@ -190,10 +207,18 @@ export default function AdminSessions() {
         updates.main_video_url = null;
       }
 
+      // Add Spotify URL if provided
+      if (spotifyUrl) {
+        updates.audio_file_url = spotifyUrl;
+      } else if (spotifyUrl === '' && editingSession.audio_file_url?.includes('spotify')) {
+        // Clear Spotify URL if field is empty and it was a Spotify link
+        updates.audio_file_url = null;
+      }
+
       await adminService.updateSession(editingSession.id, updates);
       toast({
         title: 'Session updated',
-        description: 'YouTube video link has been updated successfully',
+        description: 'Session links have been updated successfully',
       });
       handleCloseEdit();
       fetchSessions();
@@ -266,6 +291,111 @@ export default function AdminSessions() {
       });
     } finally {
       setIsCreatingSession(false);
+    }
+  };
+
+  const handleManageShortVideos = async (session: Session) => {
+    setSelectedSessionForShorts(session);
+    setShowShortVideosModal(true);
+    await loadShortVideos(session.id);
+  };
+
+  const loadShortVideos = async (sessionId: string) => {
+    setLoadingShortVideos(true);
+    try {
+      const sessionData = await sessionsService.getSessionById(sessionId);
+      setShortVideos((sessionData as any).short_videos || []);
+    } catch (error: any) {
+      toast({
+        title: 'Failed to load short videos',
+        description: error.message || 'Could not fetch short videos',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingShortVideos(false);
+    }
+  };
+
+  const handleAddShortVideo = async () => {
+    if (!selectedSessionForShorts || !newShortVideo.title || !newShortVideo.youtube_url) {
+      toast({
+        title: 'Validation Error',
+        description: 'Title and YouTube URL are required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!isValidYouTubeUrl(newShortVideo.youtube_url)) {
+      toast({
+        title: 'Invalid URL',
+        description: 'Please enter a valid YouTube URL or video ID',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const videoId = extractYouTubeVideoId(newShortVideo.youtube_url);
+      await sessionsService.addShortVideo(selectedSessionForShorts.id, {
+        title: newShortVideo.title,
+        description: newShortVideo.description || undefined,
+        video_type: 'youtube',
+        youtube_video_id: videoId || undefined,
+        video_url: newShortVideo.youtube_url,
+        order_index: shortVideos.length,
+      });
+      toast({
+        title: 'Success',
+        description: 'Short video added successfully',
+      });
+      setNewShortVideo({ title: '', description: '', youtube_url: '' });
+      setShowAddShortVideo(false);
+      await loadShortVideos(selectedSessionForShorts.id);
+    } catch (error: any) {
+      toast({
+        title: 'Failed to add short video',
+        description: error.message || 'Could not add short video',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteShortVideo = async (shortVideoId: string) => {
+    if (!confirm('Are you sure you want to delete this short video?')) {
+      return;
+    }
+
+    try {
+      await sessionsService.deleteShortVideo(shortVideoId);
+      toast({
+        title: 'Success',
+        description: 'Short video deleted successfully',
+      });
+      if (selectedSessionForShorts) {
+        await loadShortVideos(selectedSessionForShorts.id);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Failed to delete short video',
+        description: error.message || 'Could not delete short video',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUpdateShortVideoOrder = async (shortVideoId: string, newOrder: number) => {
+    try {
+      await sessionsService.updateShortVideo(shortVideoId, { order_index: newOrder });
+      if (selectedSessionForShorts) {
+        await loadShortVideos(selectedSessionForShorts.id);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Failed to update order',
+        description: error.message || 'Could not update video order',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -389,6 +519,14 @@ export default function AdminSessions() {
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleManageShortVideos(session)}
+                                  title="Manage Short Videos"
+                                >
+                                  <Youtube className="h-4 w-4" />
+                                </Button>
                                 <Link to={`/sessions/${session.id}`}>
                                   <Button size="sm" variant="outline" title="View session">
                                     <ExternalLink className="h-4 w-4" />
@@ -459,7 +597,7 @@ export default function AdminSessions() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Youtube className="h-5 w-5 text-red-600" />
-                  <CardTitle>Edit YouTube Video Link</CardTitle>
+                  <CardTitle>Edit Video & Audio Links</CardTitle>
                 </div>
                 <Button
                   variant="ghost"
@@ -507,6 +645,19 @@ export default function AdminSessions() {
                   </p>
                 </div>
               )}
+              <div>
+                <Label htmlFor="spotify-url">Spotify URL (Optional)</Label>
+                <Input
+                  id="spotify-url"
+                  placeholder="https://open.spotify.com/episode/..."
+                  value={spotifyUrl}
+                  onChange={(e) => setSpotifyUrl(e.target.value)}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Paste the Spotify episode or track URL
+                </p>
+              </div>
               <div className="flex gap-2 justify-end">
                 <Button
                   variant="outline"
@@ -655,6 +806,221 @@ export default function AdminSessions() {
                   )}
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Short Videos Management Modal */}
+      {showShortVideosModal && selectedSessionForShorts && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Youtube className="h-5 w-5 text-red-600" />
+                  <CardTitle>Manage Short Videos</CardTitle>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setShowShortVideosModal(false);
+                    setSelectedSessionForShorts(null);
+                    setShortVideos([]);
+                    setShowAddShortVideo(false);
+                    setEditingShortVideo(null);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <CardDescription>{selectedSessionForShorts.title}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-muted-foreground">
+                  Add YouTube shorts links that will appear on the session page
+                </p>
+                <Button onClick={() => setShowAddShortVideo(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Short Video
+                </Button>
+              </div>
+
+              {loadingShortVideos ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading short videos...</p>
+                </div>
+              ) : shortVideos.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No short videos yet. Click "Add Short Video" to add one.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {shortVideos.sort((a, b) => a.order_index - b.order_index).map((shortVideo, index) => (
+                    <div
+                      key={shortVideo.id}
+                      className="p-4 border rounded-lg flex items-center gap-4"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleUpdateShortVideoOrder(shortVideo.id, shortVideo.order_index - 1)}
+                          disabled={index === 0}
+                          className="h-6 w-6 p-0"
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleUpdateShortVideoOrder(shortVideo.id, shortVideo.order_index + 1)}
+                          disabled={index === shortVideos.length - 1}
+                          className="h-6 w-6 p-0"
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold">{shortVideo.title}</h4>
+                        {shortVideo.description && (
+                          <p className="text-sm text-muted-foreground">{shortVideo.description}</p>
+                        )}
+                        {shortVideo.youtube_video_id && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <Youtube className="h-4 w-4 text-red-600" />
+                            <span className="text-xs text-muted-foreground">
+                              {shortVideo.youtube_video_id}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingShortVideo(shortVideo);
+                            setNewShortVideo({
+                              title: shortVideo.title,
+                              description: shortVideo.description || '',
+                              youtube_url: shortVideo.video_url || '',
+                            });
+                            setShowAddShortVideo(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteShortVideo(shortVideo.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add/Edit Short Video Form */}
+              {showAddShortVideo && (
+                <Card className="mt-4 border-2">
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      {editingShortVideo ? 'Edit Short Video' : 'Add Short Video'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="short-video-title">Title *</Label>
+                      <Input
+                        id="short-video-title"
+                        value={newShortVideo.title}
+                        onChange={(e) => setNewShortVideo({ ...newShortVideo, title: e.target.value })}
+                        placeholder="Short video title"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="short-video-description">Description (Optional)</Label>
+                      <Textarea
+                        id="short-video-description"
+                        value={newShortVideo.description}
+                        onChange={(e) => setNewShortVideo({ ...newShortVideo, description: e.target.value })}
+                        placeholder="Brief description of the short video"
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="short-video-url">YouTube URL or Video ID *</Label>
+                      <Input
+                        id="short-video-url"
+                        value={newShortVideo.youtube_url}
+                        onChange={(e) => setNewShortVideo({ ...newShortVideo, youtube_url: e.target.value })}
+                        placeholder="https://www.youtube.com/watch?v=... or video ID"
+                      />
+                      {newShortVideo.youtube_url && !isValidYouTubeUrl(newShortVideo.youtube_url) && (
+                        <p className="text-sm text-red-600 mt-1">Invalid YouTube URL format</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowAddShortVideo(false);
+                          setEditingShortVideo(null);
+                          setNewShortVideo({ title: '', description: '', youtube_url: '' });
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          if (editingShortVideo) {
+                            // Update existing short video
+                            try {
+                              const videoId = extractYouTubeVideoId(newShortVideo.youtube_url);
+                              await sessionsService.updateShortVideo(editingShortVideo.id, {
+                                title: newShortVideo.title,
+                                description: newShortVideo.description || undefined,
+                                video_type: 'youtube',
+                                youtube_video_id: videoId || undefined,
+                                video_url: newShortVideo.youtube_url,
+                              });
+                              toast({
+                                title: 'Success',
+                                description: 'Short video updated successfully',
+                              });
+                              setShowAddShortVideo(false);
+                              setEditingShortVideo(null);
+                              setNewShortVideo({ title: '', description: '', youtube_url: '' });
+                              if (selectedSessionForShorts) {
+                                await loadShortVideos(selectedSessionForShorts.id);
+                              }
+                            } catch (error: any) {
+                              toast({
+                                title: 'Failed to update short video',
+                                description: error.message || 'Could not update short video',
+                                variant: 'destructive',
+                              });
+                            }
+                          } else {
+                            await handleAddShortVideo();
+                          }
+                        }}
+                        disabled={!newShortVideo.title || !newShortVideo.youtube_url || !isValidYouTubeUrl(newShortVideo.youtube_url)}
+                      >
+                        {editingShortVideo ? 'Update' : 'Add'} Short Video
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
         </div>

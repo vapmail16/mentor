@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, Bell, Settings, LogOut, BookOpen, Award, Users, Search, Shield } from 'lucide-react';
+import { GraduationCap, Bell, Settings, LogOut, BookOpen, Award, Users, Search, Shield, MessageSquare, BarChart3 } from 'lucide-react';
 import { authService } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -94,11 +94,16 @@ const AppNavigation = () => {
                 </>
               ) : user?.role === 'mentor' ? (
                 <>
-                  <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-                    Dashboard
+                  <Button variant="ghost" onClick={() => navigate('/mentor/dashboard')}>
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Analytics
                   </Button>
                   <Button variant="ghost" onClick={() => navigate('/sessions')}>
                     My Sessions
+                  </Button>
+                  <Button variant="ghost" onClick={() => navigate('/mentor/qa')}>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Q&A Inbox
                   </Button>
                   <Button variant="ghost" onClick={() => navigate('/profile')}>
                     Profile

@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   BookOpen, Clock, User, Languages, Download, Share2, 
-  FileText, Languages as LanguagesIcon, Lightbulb, List
+  FileText, Languages as LanguagesIcon, Lightbulb, List, Play, Youtube, Music
 } from 'lucide-react';
 import { sessionsService, type Session, type AIContent } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import AppNavigation from '@/components/layout/AppNavigation';
 import VideoPlayer from '@/components/VideoPlayer';
 import { useAuth } from '@/contexts/AuthContext';
+import { buildYouTubeEmbedUrl, buildYouTubeWatchUrl } from '@/utils/youtube';
 
 export default function SessionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +23,8 @@ export default function SessionDetail() {
   const [aiContent, setAiContent] = useState<AIContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('video');
+  const [mentorSessions, setMentorSessions] = useState<Session[]>([]);
+  const [loadingMentorSessions, setLoadingMentorSessions] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -29,6 +32,12 @@ export default function SessionDetail() {
       loadAIContent();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (session?.mentor_id) {
+      loadMentorSessions();
+    }
+  }, [session?.mentor_id]);
 
   const loadSession = async () => {
     if (!id) return;
@@ -55,6 +64,24 @@ export default function SessionDetail() {
       setAiContent(content);
     } catch (error: any) {
       console.error('Failed to load AI content:', error);
+    }
+  };
+
+  const loadMentorSessions = async () => {
+    if (!session?.mentor_id) return;
+    try {
+      setLoadingMentorSessions(true);
+      const sessions = await sessionsService.getAllSessions({ 
+        mentor_id: session.mentor_id,
+        limit: 50 
+      });
+      // Filter out current session
+      const otherSessions = sessions.filter(s => s.id !== session.id);
+      setMentorSessions(otherSessions);
+    } catch (error: any) {
+      console.error('Failed to load mentor sessions:', error);
+    } finally {
+      setLoadingMentorSessions(false);
     }
   };
 
@@ -137,10 +164,11 @@ export default function SessionDetail() {
             <TabsTrigger value="qa">Q&A</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="video" className="mt-6">
+          <TabsContent value="video" className="mt-6 space-y-6">
+            {/* Main Video */}
             <Card>
               <CardHeader>
-                <CardTitle>Video Content</CardTitle>
+                <CardTitle>Main Video</CardTitle>
               </CardHeader>
               <CardContent>
                 {session.main_video_url ? (
@@ -153,6 +181,97 @@ export default function SessionDetail() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Spotify Audio Link */}
+            {session.audio_file_url && session.audio_file_url.includes('spotify') && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Music className="h-5 w-5" />
+                    Audio (Spotify)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={() => window.open(session.audio_file_url!, '_blank')}
+                    className="w-full"
+                  >
+                    <Music className="h-4 w-4 mr-2" />
+                    Open on Spotify
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Short Videos */}
+            {session.short_videos && session.short_videos.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Youtube className="h-5 w-5 text-red-600" />
+                    Short Videos
+                  </CardTitle>
+                  <CardDescription>
+                    Quick clips and highlights from this session
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {session.short_videos.map((shortVideo) => {
+                      const videoUrl = shortVideo.video_type === 'youtube' && shortVideo.youtube_video_id
+                        ? buildYouTubeWatchUrl(shortVideo.youtube_video_id)
+                        : shortVideo.video_url;
+                      const videoId = shortVideo.video_type === 'youtube' && shortVideo.youtube_video_id
+                        ? shortVideo.youtube_video_id
+                        : null;
+                      
+                      return (
+                        <div
+                          key={shortVideo.id}
+                          className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                          onClick={() => {
+                            if (videoId) {
+                              // Open in YouTube embed in a modal or new tab
+                              window.open(videoUrl, '_blank');
+                            }
+                          }}
+                        >
+                          {videoId ? (
+                            <div className="aspect-video relative">
+                              <img
+                                src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                                alt={shortVideo.title}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors">
+                                <Play className="h-12 w-12 text-white" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="aspect-video bg-muted flex items-center justify-center">
+                              <Play className="h-12 w-12 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="p-3">
+                            <h4 className="font-semibold text-sm line-clamp-2">{shortVideo.title}</h4>
+                            {shortVideo.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                {shortVideo.description}
+                              </p>
+                            )}
+                            {shortVideo.duration && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {Math.floor(shortVideo.duration / 60)}:{(shortVideo.duration % 60).toString().padStart(2, '0')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="summary" className="mt-6">
@@ -225,32 +344,55 @@ export default function SessionDetail() {
           <TabsContent value="chapters" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Chapters</CardTitle>
+                <CardTitle>Other Videos from This Mentor</CardTitle>
+                <CardDescription>
+                  Explore more content from {session.mentor?.full_name || 'this mentor'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {aiContent?.chapters && aiContent.chapters.length > 0 ? (
-                  <div className="space-y-2">
-                    {aiContent.chapters.map((chapter) => (
+                {loadingMentorSessions ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                    <p className="text-sm text-muted-foreground">Loading videos...</p>
+                  </div>
+                ) : mentorSessions.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {mentorSessions.map((mentorSession, index) => (
                       <div
-                        key={chapter.id}
-                        className="p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                        key={mentorSession.id}
+                        className="p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => navigate(`/sessions/${mentorSession.id}`)}
                       >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-semibold">{chapter.title}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {Math.floor(chapter.start_time / 60)}:{(chapter.start_time % 60).toString().padStart(2, '0')} - {Math.floor(chapter.end_time / 60)}:{(chapter.end_time % 60).toString().padStart(2, '0')}
-                            </p>
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-sm font-semibold text-primary">
+                              {index + 1}
+                            </span>
                           </div>
-                          <Button variant="ghost" size="sm">
-                            Jump to
-                          </Button>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold line-clamp-2 mb-1">{mentorSession.title}</h4>
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                              {mentorSession.description}
+                            </p>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {mentorSession.duration_minutes} min
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Languages className="h-3 w-3" />
+                                {mentorSession.language}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">Chapters not available yet</p>
+                  <p className="text-muted-foreground text-center py-8">
+                    No other videos available from this mentor yet.
+                  </p>
                 )}
               </CardContent>
             </Card>

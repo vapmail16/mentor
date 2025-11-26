@@ -10,6 +10,10 @@ export interface Question {
   downvotes: number;
   created_at: string;
   updated_at: string;
+  user_name?: string;
+  user_avatar?: string;
+  session_title?: string;
+  answer_count?: number;
   user?: {
     id: string;
     full_name: string;
@@ -89,6 +93,19 @@ const qaService = {
       }),
     });
     return parseJsonResponse(response);
+  },
+
+  async getMentorQuestions(
+    options: { is_answered?: boolean; session_id?: string; limit?: number; offset?: number } = {}
+  ): Promise<Question[]> {
+    const params = new URLSearchParams();
+    if (options.is_answered !== undefined) params.append('is_answered', options.is_answered.toString());
+    if (options.session_id) params.append('session_id', options.session_id);
+    if (options.limit) params.append('limit', options.limit.toString());
+    if (options.offset) params.append('offset', options.offset.toString());
+
+    const response = await fetchWithAuth(`/qa/mentor/questions?${params.toString()}`);
+    return parseJsonResponse<Question[]>(response);
   },
 };
 

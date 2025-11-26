@@ -1,5 +1,19 @@
 import { fetchWithAuth, parseJsonResponse } from './http';
 
+export interface ShortVideo {
+  id: string;
+  session_id: string;
+  title: string;
+  description?: string;
+  video_url: string;
+  video_type: 'upload' | 'youtube';
+  youtube_video_id?: string | null;
+  duration?: number;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Session {
   id: string;
   mentor_id: string;
@@ -21,6 +35,7 @@ export interface Session {
     full_name: string;
     photo_url?: string;
   };
+  short_videos?: ShortVideo[];
 }
 
 export interface SessionFilters {
@@ -78,6 +93,80 @@ const sessionsService = {
       method: 'POST',
       body: JSON.stringify({ watched_seconds: watchedSeconds }),
     });
+  },
+
+  async addShortVideo(sessionId: string, videoData: {
+    title: string;
+    description?: string;
+    video_url?: string;
+    video_type?: 'upload' | 'youtube';
+    youtube_video_id?: string;
+    duration?: number;
+    order_index?: number;
+  }): Promise<ShortVideo> {
+    const response = await fetchWithAuth(`/sessions/${sessionId}/short-videos`, {
+      method: 'POST',
+      body: JSON.stringify(videoData),
+    });
+    return parseJsonResponse<ShortVideo>(response);
+  },
+
+  async updateShortVideo(shortVideoId: string, videoData: {
+    title?: string;
+    description?: string;
+    video_url?: string;
+    video_type?: 'upload' | 'youtube';
+    youtube_video_id?: string;
+    duration?: number;
+    order_index?: number;
+  }): Promise<ShortVideo> {
+    const response = await fetchWithAuth(`/sessions/short-videos/${shortVideoId}`, {
+      method: 'PUT',
+      body: JSON.stringify(videoData),
+    });
+    return parseJsonResponse<ShortVideo>(response);
+  },
+
+  async deleteShortVideo(shortVideoId: string): Promise<void> {
+    await fetchWithAuth(`/sessions/short-videos/${shortVideoId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async createSession(sessionData: {
+    title: string;
+    description: string;
+    language: string;
+    difficulty_level?: string;
+    main_video_url?: string;
+    video_type?: 'upload' | 'youtube';
+    youtube_video_id?: string;
+    audio_file_url?: string;
+    is_published?: boolean;
+  }): Promise<Session> {
+    const response = await fetchWithAuth('/sessions', {
+      method: 'POST',
+      body: JSON.stringify(sessionData),
+    });
+    return parseJsonResponse<Session>(response);
+  },
+
+  async updateSession(sessionId: string, updates: {
+    title?: string;
+    description?: string;
+    language?: string;
+    difficulty_level?: string;
+    main_video_url?: string;
+    video_type?: 'upload' | 'youtube';
+    youtube_video_id?: string;
+    audio_file_url?: string;
+    is_published?: boolean;
+  }): Promise<Session> {
+    const response = await fetchWithAuth(`/sessions/${sessionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    return parseJsonResponse<Session>(response);
   },
 };
 

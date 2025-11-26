@@ -1,10 +1,73 @@
 import express from 'express';
 import qaService from '../services/qa.service.js';
+import mentorService from '../services/mentor.service.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 
 const router = express.Router();
+
+/**
+ * GET /api/qa/mentor/questions
+ * Get all questions for mentor's sessions (mentor or admin only)
+ */
+router.get('/mentor/questions', authenticateToken, asyncHandler(async (req, res) => {
+  const { is_answered, session_id, limit = 50, offset = 0 } = req.query;
+
+  // Allow admins to view all mentor questions, or mentors to view their own
+  if (req.user.role !== 'admin' && req.user.role !== 'mentor') {
+    return res.status(403).json({
+      success: false,
+      error: {
+        message: 'Access denied. Mentor or admin role required.',
+      },
+    });
+  }
+
+  // Get mentor profile to verify user is a mentor (if not admin)
+  let mentorUserId = req.user.userId;
+  if (req.user.role === 'admin' && session_id) {
+    // Admin can view questions for a specific session's mentor
+    const { query } = await import('../config/database.js');
+    const sessionResult = await query(
+      'SELECT mentor_id FROM sessions WHERE id = $1',
+      [session_id]
+    );
+    if (sessionResult.rows.length > 0) {
+      const mentorResult = await query(
+        'SELECT user_id FROM mentors WHERE id = $1',
+        [sessionResult.rows[0].mentor_id]
+      );
+      if (mentorResult.rows.length > 0) {
+        mentorUserId = mentorResult.rows[0].user_id;
+      }
+    }
+  } else if (req.user.role === 'mentor') {
+    const mentor = await mentorService.getMentorByUserId(req.user.userId);
+    if (!mentor) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          message: 'Mentor profile not found',
+        },
+      });
+    }
+    // Use the mentor's user ID directly
+    mentorUserId = req.user.userId;
+  }
+
+  const questions = await qaService.getMentorQuestions(mentorUserId, {
+    is_answered: is_answered === 'true' ? true : is_answered === 'false' ? false : undefined,
+    session_id: session_id || undefined,
+    limit: parseInt(limit),
+    offset: parseInt(offset),
+  });
+
+  res.json({
+    success: true,
+    data: questions,
+  });
+}));
 
 /**
  * GET /api/qa/session/:sessionId

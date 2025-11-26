@@ -93,6 +93,85 @@ export const getQuestionById = async (questionId) => {
 };
 
 /**
+ * Get questions for a mentor's sessions
+ */
+export const getMentorQuestions = async (mentorUserId, filters = {}) => {
+  try {
+    const { is_answered, session_id, limit = 50, offset = 0 } = filters;
+
+    // First verify the mentor exists and get their mentor_id
+    const mentorCheck = await query(
+      'SELECT id FROM mentors WHERE user_id = $1',
+      [mentorUserId]
+    );
+
+    if (mentorCheck.rows.length === 0) {
+      // Mentor profile doesn't exist, return empty array
+      return [];
+    }
+
+    let queryText = `
+      SELECT q.id, q.session_id, q.user_id, q.question, q.is_answered, 
+             q.upvotes, q.downvotes, q.created_at, q.updated_at, q.answered_at,
+             u.full_name as user_name, u.avatar_url as user_avatar,
+             s.title as session_title
+      FROM qa_questions q
+      JOIN users u ON q.user_id = u.id
+      JOIN sessions s ON q.session_id = s.id
+      JOIN mentors m ON s.mentor_id = m.id
+      WHERE m.user_id = $1
+    `;
+    const params = [mentorUserId];
+    let paramIndex = 2;
+
+    if (session_id) {
+      queryText += ` AND s.id = $${paramIndex++}`;
+      params.push(session_id);
+    }
+
+    if (is_answered !== undefined) {
+      queryText += ` AND q.is_answered = $${paramIndex++}`;
+      params.push(is_answered);
+    }
+
+    queryText += ` ORDER BY q.created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    params.push(limit, offset);
+
+    const result = await query(queryText, params);
+
+    // If no questions found, return empty array
+    if (!result.rows || result.rows.length === 0) {
+      return [];
+    }
+
+    // Get answer counts for each question
+    const questionsWithCounts = await Promise.all(result.rows.map(async (question) => {
+      try {
+        const answerCountResult = await query(
+          'SELECT COUNT(*) as count FROM qa_answers WHERE question_id = $1',
+          [question.id]
+        );
+        return {
+          ...question,
+          answer_count: parseInt(answerCountResult.rows[0]?.count || 0),
+        };
+      } catch (error) {
+        logger.error('Error getting answer count', error, { questionId: question.id });
+        return {
+          ...question,
+          answer_count: 0,
+        };
+      }
+    }));
+
+    return questionsWithCounts;
+  } catch (error) {
+    logger.error('Get mentor questions error', error, { mentorUserId });
+    throw error;
+  }
+};
+
+/**
  * Get questions for a session
  */
 export const getSessionQuestions = async (sessionId, filters = {}) => {

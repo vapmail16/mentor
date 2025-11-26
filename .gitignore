@@ -67,3 +67,4 @@ Thumbs.db
 .cache/
 *.local
 
+backend/.env.remote

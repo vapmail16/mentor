@@ -304,6 +304,106 @@ export const addShortVideo = async (sessionId, videoData) => {
 };
 
 /**
+ * Update short video
+ */
+export const updateShortVideo = async (shortVideoId, videoData) => {
+  try {
+    const {
+      title,
+      description,
+      video_url,
+      video_type,
+      youtube_video_id,
+      duration,
+      order_index,
+    } = videoData;
+
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (title !== undefined) {
+      updates.push(`title = $${paramIndex++}`);
+      values.push(title);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramIndex++}`);
+      values.push(description);
+    }
+    if (video_url !== undefined) {
+      updates.push(`video_url = $${paramIndex++}`);
+      values.push(video_url);
+    }
+    if (video_type !== undefined) {
+      updates.push(`video_type = $${paramIndex++}`);
+      values.push(video_type);
+    }
+    if (youtube_video_id !== undefined) {
+      updates.push(`youtube_video_id = $${paramIndex++}`);
+      values.push(youtube_video_id);
+    }
+    if (duration !== undefined) {
+      updates.push(`duration = $${paramIndex++}`);
+      values.push(duration);
+    }
+    if (order_index !== undefined) {
+      updates.push(`order_index = $${paramIndex++}`);
+      values.push(order_index);
+    }
+
+    if (updates.length === 0) {
+      // No updates provided, just return the existing video
+      const result = await query('SELECT * FROM short_videos WHERE id = $1', [shortVideoId]);
+      if (result.rows.length === 0) {
+        throw new Error('Short video not found');
+      }
+      return result.rows[0];
+    }
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(shortVideoId);
+
+    const result = await query(
+      `UPDATE short_videos 
+       SET ${updates.join(', ')}
+       WHERE id = $${paramIndex}
+       RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Short video not found');
+    }
+
+    return result.rows[0];
+  } catch (error) {
+    logger.error('Update short video error', error, { shortVideoId });
+    throw error;
+  }
+};
+
+/**
+ * Delete short video
+ */
+export const deleteShortVideo = async (shortVideoId) => {
+  try {
+    const result = await query(
+      'DELETE FROM short_videos WHERE id = $1 RETURNING *',
+      [shortVideoId]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Short video not found');
+    }
+
+    return result.rows[0];
+  } catch (error) {
+    logger.error('Delete short video error', error, { shortVideoId });
+    throw error;
+  }
+};
+
+/**
  * Update watch history
  */
 export const updateWatchHistory = async (userId, sessionId, watchedDuration, totalDuration) => {
@@ -354,6 +454,8 @@ export default {
   updateSession,
   deleteSession,
   addShortVideo,
+  updateShortVideo,
+  deleteShortVideo,
   updateWatchHistory,
 };
 

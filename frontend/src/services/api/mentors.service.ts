@@ -16,12 +16,10 @@ export interface Mentor {
 }
 
 export interface MentorAnalytics {
-  total_sessions: number;
-  total_views: number;
-  total_watch_time_minutes: number;
-  average_rating: number;
-  total_comments: number;
-  total_questions: number;
+  totalSessions: number;
+  publishedSessions: number;
+  totalViews: number;
+  totalEngagement: number;
 }
 
 const mentorsService = {
